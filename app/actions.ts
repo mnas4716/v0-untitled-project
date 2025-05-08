@@ -3,19 +3,14 @@
 import { z } from "zod"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import {
-  createConsultRequest,
-  updateConsultRequest,
-  cancelConsultRequest,
-  completeConsultRequest,
   createUser,
   getUserByEmail,
   updateUser,
   updateUserLoginTime,
+  createConsultRequest,
+  cancelConsultRequest,
 } from "@/lib/database-service"
-import { revalidatePath } from "next/cache"
 
 // Schema for sign-in form
 const signInSchema = z.object({
@@ -247,57 +242,9 @@ export async function adminSignIn(formData: FormData) {
   }
 }
 
-// Function to update request status
-export async function updateRequestStatus(requestId: string, status: string, notes?: string) {
-  // Get the session
-  const session = await getServerSession(authOptions)
-
-  // If there's no session, throw an error
-  if (!session) {
-    return { success: false, message: "Unauthorized" }
-  }
-
-  // Get the user's role
-  const userRole = session.user.role
-
-  // Only allow admins and doctors to update request status
-  if (userRole !== "admin" && userRole !== "doctor") {
-    return { success: false, message: "Unauthorized" }
-  }
-
-  try {
-    let result
-
-    if (status === "completed") {
-      result = completeConsultRequest(requestId, notes)
-    } else if (status === "cancelled") {
-      result = cancelConsultRequest(requestId, notes)
-    } else {
-      result = updateConsultRequest(requestId, { status })
-    }
-
-    if (!result) {
-      return { success: false, message: "Request not found" }
-    }
-
-    // Revalidate the dashboard pages to ensure data consistency
-    revalidatePath("/admin/dashboard")
-    revalidatePath("/doctor/dashboard")
-    revalidatePath("/dashboard")
-
-    return { success: true, message: "Status updated successfully" }
-  } catch (error) {
-    console.error("Error updating request status:", error)
-    return { success: false, message: "Failed to update request status" }
-  }
-}
-
 // Function to handle consultation form submission
 export async function submitConsultation(formData: FormData) {
   try {
-    // Get the session
-    const session = await getServerSession(authOptions)
-
     // Extract data from FormData
     const firstName = formData.get("firstName") as string
     const lastName = formData.get("lastName") as string
@@ -314,7 +261,6 @@ export async function submitConsultation(formData: FormData) {
 
     // Check if user exists, if not create a new user
     let user = getUserByEmail(email)
-    let userId = session?.user?.id || null
 
     if (!user) {
       // Create new user with provided info
@@ -332,8 +278,6 @@ export async function submitConsultation(formData: FormData) {
           message: "Failed to create user account.",
         }
       }
-
-      userId = user.id
     } else {
       // Update user information if it exists
       updateUser(user.id, {
@@ -342,8 +286,6 @@ export async function submitConsultation(formData: FormData) {
         phone,
         dob,
       })
-
-      userId = user.id
     }
 
     // Get current date and time for the appointment
@@ -353,7 +295,7 @@ export async function submitConsultation(formData: FormData) {
 
     // Create consultation request
     const consultRequest = createConsultRequest({
-      userId: userId,
+      userId: user.id,
       type: "consultation",
       status: "pending",
       reason,
@@ -371,11 +313,6 @@ export async function submitConsultation(formData: FormData) {
         files: fileCount > 0 ? true : false,
       },
     })
-
-    // Revalidate paths
-    revalidatePath("/dashboard")
-    revalidatePath("/admin/dashboard")
-    revalidatePath("/doctor/dashboard")
 
     // Return success with redirect URL instead of directly redirecting
     return {

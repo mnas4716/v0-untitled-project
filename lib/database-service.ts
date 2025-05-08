@@ -1,4 +1,5 @@
-import { sql } from "./db"
+// Database service using localStorage for persistence
+// This is a simple implementation for demo purposes
 
 // Types
 export interface User {
@@ -8,7 +9,6 @@ export interface User {
   lastName: string
   phone?: string
   dob?: string
-  role?: string
   createdAt: string
   updatedAt: string
   lastLogin?: string
@@ -17,7 +17,6 @@ export interface User {
 export interface ConsultRequest {
   id: string
   userId: string
-  doctorId?: string
   type: "consultation" | "medical-certificate" | "prescription"
   reason: string
   date: string
@@ -32,9 +31,9 @@ export interface ConsultRequest {
   phone: string
   details: any
   notes?: string
-  doctorNotes?: string
 }
 
+// Add Doctor type
 export interface Doctor {
   id: string
   email: string
@@ -53,94 +52,6 @@ interface Database {
   consultRequests: ConsultRequest[]
   doctors: Doctor[]
 }
-
-// Mock database for demo purposes
-const users = [
-  {
-    id: "user_id",
-    email: "user@example.com",
-    firstName: "John",
-    lastName: "Doe",
-    phone: "123-456-7890",
-    dob: "1990-01-01",
-    role: "user",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-  },
-  {
-    id: "admin_id",
-    email: "admin@example.com",
-    firstName: "Admin",
-    lastName: "User",
-    phone: "123-456-7890",
-    dob: "1985-01-01",
-    role: "admin",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-  },
-  {
-    id: "doctor_id",
-    email: "doctor@example.com",
-    firstName: "Doctor",
-    lastName: "Smith",
-    phone: "123-456-7890",
-    dob: "1980-01-01",
-    role: "doctor",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-  },
-]
-
-const consultRequests = [
-  {
-    id: "req1",
-    userId: "user_id",
-    type: "consultation",
-    status: "pending",
-    reason: "Persistent cough and fever",
-    date: "2023-05-15",
-    time: "10:00 AM",
-    patientName: "John Doe",
-    email: "user@example.com",
-    phone: "123-456-7890",
-    createdAt: new Date().toISOString(),
-    details: {
-      firstName: "John",
-      lastName: "Doe",
-      email: "user@example.com",
-      phone: "123-456-7890",
-      dob: "1990-01-01",
-    },
-    doctorNotes: "Patient has a history of respiratory issues.",
-  },
-  {
-    id: "req2",
-    userId: "user_id",
-    type: "medical-certificate",
-    status: "completed",
-    reason: "Sick leave",
-    date: "2023-05-14",
-    time: "2:30 PM",
-    patientName: "John Doe",
-    email: "user@example.com",
-    phone: "123-456-7890",
-    createdAt: new Date(Date.now() - 259200000).toISOString(),
-    completedAt: new Date(Date.now() - 172800000).toISOString(),
-    details: {
-      firstName: "John",
-      lastName: "Doe",
-      email: "user@example.com",
-      phone: "123-456-7890",
-      dob: "1990-01-01",
-      startDate: "2023-05-14",
-      endDate: "2023-05-17",
-    },
-    doctorNotes: "Patient is recovering from flu.",
-  },
-]
 
 // Initialize the database
 export function initDatabase(): void {
@@ -378,936 +289,325 @@ function saveDatabase(db: Database): void {
 }
 
 // User functions
-export async function getAllUsers(): Promise<User[]> {
-  const users = await sql`
-    SELECT 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      phone, 
-      dob, 
-      role,
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-    FROM users
-    ORDER BY created_at DESC
-  `
-
-  return users
+export function getAllUsers(): User[] {
+  const db = getDatabase()
+  return db.users
 }
 
-export async function getUserById(id: string): Promise<User | null> {
-  const users = await sql`
-    SELECT 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      phone, 
-      dob, 
-      role,
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-    FROM users
-    WHERE id = ${id}
-  `
-
-  return users.length > 0 ? users[0] : null
+export function getUserById(id: string): User | null {
+  const db = getDatabase()
+  return db.users.find((user) => user.id === id) || null
 }
 
-export async function getUserByEmail(email: string): Promise<User | null> {
-  const users = await sql`
-    SELECT 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      phone, 
-      dob, 
-      role,
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-    FROM users
-    WHERE email = ${email}
-  `
-
-  return users.length > 0 ? users[0] : null
+export function getUserByEmail(email: string): User | null {
+  const db = getDatabase()
+  return db.users.find((user) => user.email === email) || null
 }
 
-export async function createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> {
-  const { email, firstName, lastName, phone, dob, role = "user" } = userData
+export function createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): User {
+  const db = getDatabase()
 
-  const users = await sql`
-    INSERT INTO users (
-      email, 
-      first_name, 
-      last_name, 
-      phone, 
-      dob, 
-      role
-    ) 
-    VALUES (
-      ${email}, 
-      ${firstName}, 
-      ${lastName}, 
-      ${phone || null}, 
-      ${dob ? new Date(dob) : null}, 
-      ${role}
-    )
-    RETURNING 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      phone, 
-      dob, 
-      role,
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-  `
+  // Check if user with this email already exists
+  const existingUser = db.users.find((user) => user.email === userData.email)
+  if (existingUser) {
+    throw new Error("User with this email already exists")
+  }
 
-  return users[0]
+  const newUser: User = {
+    ...userData,
+    id: `user${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastLogin: new Date().toISOString(),
+  }
+
+  db.users.push(newUser)
+  saveDatabase(db)
+
+  return newUser
 }
 
-export async function updateUser(id: string, userData: Partial<User>): Promise<User | null> {
-  const { email, firstName, lastName, phone, dob, role } = userData
+export function updateUser(id: string, userData: Partial<User>): User | null {
+  const db = getDatabase()
+  const userIndex = db.users.findIndex((user) => user.id === id)
 
-  // Build the SET clause dynamically based on provided fields
-  const setClauses = []
-  const params = []
+  if (userIndex === -1) return null
 
-  if (email !== undefined) {
-    setClauses.push("email = $1")
-    params.push(email)
+  // Update the user
+  const updatedUser = {
+    ...db.users[userIndex],
+    ...userData,
+    updatedAt: new Date().toISOString(),
   }
 
-  if (firstName !== undefined) {
-    setClauses.push("first_name = $" + (params.length + 1))
-    params.push(firstName)
-  }
+  db.users[userIndex] = updatedUser
+  saveDatabase(db)
 
-  if (lastName !== undefined) {
-    setClauses.push("last_name = $" + (params.length + 1))
-    params.push(lastName)
-  }
-
-  if (phone !== undefined) {
-    setClauses.push("phone = $" + (params.length + 1))
-    params.push(phone)
-  }
-
-  if (dob !== undefined) {
-    setClauses.push("dob = $" + (params.length + 1))
-    params.push(dob ? new Date(dob) : null)
-  }
-
-  if (role !== undefined) {
-    setClauses.push("role = $" + (params.length + 1))
-    params.push(role)
-  }
-
-  // Always update the updated_at timestamp
-  setClauses.push("updated_at = CURRENT_TIMESTAMP")
-
-  if (setClauses.length === 0) {
-    return getUserById(id)
-  }
-
-  // Add the id parameter
-  params.push(id)
-
-  const query = `
-    UPDATE users 
-    SET ${setClauses.join(", ")} 
-    WHERE id = $${params.length}
-    RETURNING 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      phone, 
-      dob, 
-      role,
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-  `
-
-  const users = await sql.unsafe(query, ...params)
-
-  return users.length > 0 ? users[0] : null
+  return updatedUser
 }
 
-export async function updateUserLoginTime(id: string): Promise<User | null> {
-  const users = await sql`
-    UPDATE users 
-    SET 
-      last_login = CURRENT_TIMESTAMP,
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${id}
-    RETURNING 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      phone, 
-      dob, 
-      role,
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-  `
+export function updateUserLoginTime(id: string): User | null {
+  const db = getDatabase()
+  const userIndex = db.users.findIndex((user) => user.id === id)
 
-  return users.length > 0 ? users[0] : null
+  if (userIndex === -1) return null
+
+  // Update the user's last login time
+  const updatedUser = {
+    ...db.users[userIndex],
+    lastLogin: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  db.users[userIndex] = updatedUser
+  saveDatabase(db)
+
+  return updatedUser
 }
 
-export async function deleteUser(id: string): Promise<boolean> {
-  const result = await sql`
-    DELETE FROM users
-    WHERE id = ${id}
-  `
+export function deleteUser(id: string): boolean {
+  const db = getDatabase()
+  const initialLength = db.users.length
 
-  return result.count > 0
+  // Remove the user
+  db.users = db.users.filter((user) => user.id !== id)
+
+  // Also remove their consult requests
+  db.consultRequests = db.consultRequests.filter((req) => req.userId !== id)
+
+  saveDatabase(db)
+
+  return db.users.length < initialLength
 }
 
 // Consult request functions
-export async function getAllConsultRequests(): Promise<ConsultRequest[]> {
-  const requests = await sql`
-    SELECT 
-      mr.id, 
-      mr.user_id as "userId",
-      mr.doctor_id as "doctorId",
-      mr.type,
-      mr.status,
-      mr.reason,
-      mr.date,
-      mr.time,
-      mr.patient_name as "patientName",
-      mr.email,
-      mr.phone,
-      mr.doctor_notes as "doctorNotes",
-      mr.created_at as "createdAt",
-      mr.completed_at as "completedAt",
-      mr.cancelled_at as "cancelledAt",
-      mr.cancel_reason as "cancelReason",
-      
-      -- Consultation details
-      cd.symptoms,
-      cd.duration,
-      cd.has_files as "hasFiles",
-      
-      -- Certificate details
-      cert.start_date as "startDate",
-      cert.end_date as "endDate",
-      cert.condition,
-      cert.has_files as "certHasFiles",
-      
-      -- Prescription details
-      pd.medication,
-      pd.dosage,
-      pd.delivery_option as "deliveryOption",
-      pd.has_files as "prescHasFiles"
-      
-    FROM medical_requests mr
-    LEFT JOIN consultation_details cd ON mr.id = cd.request_id
-    LEFT JOIN certificate_details cert ON mr.id = cert.request_id
-    LEFT JOIN prescription_details pd ON mr.id = pd.request_id
-    ORDER BY mr.created_at DESC
-  `
-
-  // Transform the results to match the expected format
-  return requests.map((req) => {
-    // Construct the details object based on the request type
-    let details: any = {}
-
-    if (req.type === "consultation") {
-      details = {
-        symptoms: req.symptoms,
-        duration: req.duration,
-        hasFiles: req.hasFiles,
-      }
-    } else if (req.type === "medical-certificate") {
-      details = {
-        startDate: req.startDate,
-        endDate: req.endDate,
-        condition: req.condition,
-        hasFiles: req.certHasFiles,
-      }
-    } else if (req.type === "prescription") {
-      details = {
-        medication: req.medication,
-        dosage: req.dosage,
-        deliveryOption: req.deliveryOption,
-        hasFiles: req.prescHasFiles,
-      }
-    }
-
-    return {
-      id: req.id,
-      userId: req.userId,
-      doctorId: req.doctorId,
-      type: req.type,
-      status: req.status,
-      reason: req.reason,
-      date: req.date,
-      time: req.time,
-      patientName: req.patientName,
-      email: req.email,
-      phone: req.phone,
-      doctorNotes: req.doctorNotes,
-      createdAt: req.createdAt,
-      completedAt: req.completedAt,
-      cancelledAt: req.cancelledAt,
-      cancelReason: req.cancelReason,
-      details,
-    }
-  })
+export function getAllConsultRequests(): ConsultRequest[] {
+  const db = getDatabase()
+  return db.consultRequests
 }
 
-export async function getConsultRequestById(id: string): Promise<ConsultRequest | null> {
-  const requests = await sql`
-    SELECT 
-      mr.id, 
-      mr.user_id as "userId",
-      mr.doctor_id as "doctorId",
-      mr.type,
-      mr.status,
-      mr.reason,
-      mr.date,
-      mr.time,
-      mr.patient_name as "patientName",
-      mr.email,
-      mr.phone,
-      mr.doctor_notes as "doctorNotes",
-      mr.created_at as "createdAt",
-      mr.completed_at as "completedAt",
-      mr.cancelled_at as "cancelledAt",
-      mr.cancel_reason as "cancelReason",
-      
-      -- Consultation details
-      cd.symptoms,
-      cd.duration,
-      cd.has_files as "hasFiles",
-      
-      -- Certificate details
-      cert.start_date as "startDate",
-      cert.end_date as "endDate",
-      cert.condition,
-      cert.has_files as "certHasFiles",
-      
-      -- Prescription details
-      pd.medication,
-      pd.dosage,
-      pd.delivery_option as "deliveryOption",
-      pd.has_files as "prescHasFiles"
-      
-    FROM medical_requests mr
-    LEFT JOIN consultation_details cd ON mr.id = cd.request_id
-    LEFT JOIN certificate_details cert ON mr.id = cert.request_id
-    LEFT JOIN prescription_details pd ON mr.id = pd.request_id
-    WHERE mr.id = ${id}
-  `
+export function getConsultRequestById(id: string): ConsultRequest | null {
+  const db = getDatabase()
+  return db.consultRequests.find((req) => req.id === id) || null
+}
 
-  if (requests.length === 0) {
-    return null
+export function getConsultRequestsByUserId(userId: string): ConsultRequest[] {
+  const db = getDatabase()
+  return db.consultRequests.filter((req) => req.userId === userId)
+}
+
+export function getConsultRequestsByEmail(email: string): ConsultRequest[] {
+  const db = getDatabase()
+  return db.consultRequests.filter((req) => req.email === email)
+}
+
+export function createConsultRequest(requestData: Omit<ConsultRequest, "id" | "createdAt">): ConsultRequest {
+  const db = getDatabase()
+
+  const newRequest: ConsultRequest = {
+    ...requestData,
+    id: `c${Date.now()}`,
+    createdAt: new Date().toISOString(),
   }
 
-  const req = requests[0]
+  db.consultRequests.push(newRequest)
+  saveDatabase(db)
 
-  // Construct the details object based on the request type
-  let details: any = {}
+  // Also update the consultations localStorage for compatibility
+  updateConsultationsLocalStorage(db.consultRequests)
 
-  if (req.type === "consultation") {
-    details = {
-      symptoms: req.symptoms,
-      duration: req.duration,
-      hasFiles: req.hasFiles,
-    }
-  } else if (req.type === "medical-certificate") {
-    details = {
-      startDate: req.startDate,
-      endDate: req.endDate,
-      condition: req.condition,
-      hasFiles: req.certHasFiles,
-    }
-  } else if (req.type === "prescription") {
-    details = {
-      medication: req.medication,
-      dosage: req.dosage,
-      deliveryOption: req.deliveryOption,
-      hasFiles: req.prescHasFiles,
-    }
+  return newRequest
+}
+
+export function updateConsultRequest(id: string, requestData: Partial<ConsultRequest>): ConsultRequest | null {
+  const db = getDatabase()
+  const requestIndex = db.consultRequests.findIndex((req) => req.id === id)
+
+  if (requestIndex === -1) return null
+
+  // Update the request
+  const updatedRequest = {
+    ...db.consultRequests[requestIndex],
+    ...requestData,
   }
 
-  return {
-    id: req.id,
-    userId: req.userId,
-    doctorId: req.doctorId,
-    type: req.type,
-    status: req.status,
-    reason: req.reason,
-    date: req.date,
-    time: req.time,
-    patientName: req.patientName,
-    email: req.email,
-    phone: req.phone,
-    doctorNotes: req.doctorNotes,
-    createdAt: req.createdAt,
-    completedAt: req.completedAt,
-    cancelledAt: req.cancelledAt,
-    cancelReason: req.cancelReason,
-    details,
-  }
+  db.consultRequests[requestIndex] = updatedRequest
+  saveDatabase(db)
+
+  // Also update the consultations localStorage for compatibility
+  updateConsultationsLocalStorage(db.consultRequests)
+
+  return updatedRequest
 }
 
-export async function getConsultRequestsByUserId(userId: string): Promise<ConsultRequest[]> {
-  const requests = await sql`
-    SELECT 
-      mr.id, 
-      mr.user_id as "userId",
-      mr.doctor_id as "doctorId",
-      mr.type,
-      mr.status,
-      mr.reason,
-      mr.date,
-      mr.time,
-      mr.patient_name as "patientName",
-      mr.email,
-      mr.phone,
-      mr.doctor_notes as "doctorNotes",
-      mr.created_at as "createdAt",
-      mr.completed_at as "completedAt",
-      mr.cancelled_at as "cancelledAt",
-      mr.cancel_reason as "cancelReason",
-      
-      -- Consultation details
-      cd.symptoms,
-      cd.duration,
-      cd.has_files as "hasFiles",
-      
-      -- Certificate details
-      cert.start_date as "startDate",
-      cert.end_date as "endDate",
-      cert.condition,
-      cert.has_files as "certHasFiles",
-      
-      -- Prescription details
-      pd.medication,
-      pd.dosage,
-      pd.delivery_option as "deliveryOption",
-      pd.has_files as "prescHasFiles"
-      
-    FROM medical_requests mr
-    LEFT JOIN consultation_details cd ON mr.id = cd.request_id
-    LEFT JOIN certificate_details cert ON mr.id = cert.request_id
-    LEFT JOIN prescription_details pd ON mr.id = pd.request_id
-    WHERE mr.user_id = ${userId}
-    ORDER BY mr.created_at DESC
-  `
+export function markConsultRequestAsCompleted(id: string): ConsultRequest | null {
+  const db = getDatabase()
+  const requestIndex = db.consultRequests.findIndex((req) => req.id === id)
 
-  // Transform the results to match the expected format
-  return requests.map((req) => {
-    // Construct the details object based on the request type
-    let details: any = {}
+  if (requestIndex === -1) return null
 
-    if (req.type === "consultation") {
-      details = {
-        symptoms: req.symptoms,
-        duration: req.duration,
-        hasFiles: req.hasFiles,
-      }
-    } else if (req.type === "medical-certificate") {
-      details = {
-        startDate: req.startDate,
-        endDate: req.endDate,
-        condition: req.condition,
-        hasFiles: req.certHasFiles,
-      }
-    } else if (req.type === "prescription") {
-      details = {
-        medication: req.medication,
-        dosage: req.dosage,
-        deliveryOption: req.deliveryOption,
-        hasFiles: req.prescHasFiles,
-      }
-    }
-
-    return {
-      id: req.id,
-      userId: req.userId,
-      doctorId: req.doctorId,
-      type: req.type,
-      status: req.status,
-      reason: req.reason,
-      date: req.date,
-      time: req.time,
-      patientName: req.patientName,
-      email: req.email,
-      phone: req.phone,
-      doctorNotes: req.doctorNotes,
-      createdAt: req.createdAt,
-      completedAt: req.completedAt,
-      cancelledAt: req.cancelledAt,
-      cancelReason: req.cancelReason,
-      details,
-    }
-  })
-}
-
-export async function createConsultRequest(
-  requestData: Omit<ConsultRequest, "id" | "createdAt">,
-): Promise<ConsultRequest> {
-  const { userId, doctorId, type, status, reason, date, time, patientName, email, phone, doctorNotes, details } =
-    requestData
-
-  // Start a transaction
-  const result = await sql.begin(async (sql) => {
-    // Insert into medical_requests
-    const requests = await sql`
-      INSERT INTO medical_requests (
-        user_id,
-        doctor_id,
-        type,
-        status,
-        reason,
-        date,
-        time,
-        patient_name,
-        email,
-        phone,
-        doctor_notes
-      ) 
-      VALUES (
-        ${userId},
-        ${doctorId || null},
-        ${type},
-        ${status || "pending"},
-        ${reason},
-        ${date},
-        ${time},
-        ${patientName},
-        ${email},
-        ${phone},
-        ${doctorNotes || null}
-      )
-      RETURNING 
-        id, 
-        user_id as "userId",
-        doctor_id as "doctorId",
-        type,
-        status,
-        reason,
-        date,
-        time,
-        patient_name as "patientName",
-        email,
-        phone,
-        doctor_notes as "doctorNotes",
-        created_at as "createdAt",
-        completed_at as "completedAt",
-        cancelled_at as "cancelledAt",
-        cancel_reason as "cancelReason"
-    `
-
-    const request = requests[0]
-
-    // Insert into the appropriate details table based on type
-    if (type === "consultation" && details) {
-      await sql`
-        INSERT INTO consultation_details (
-          request_id,
-          symptoms,
-          duration,
-          has_files
-        ) 
-        VALUES (
-          ${request.id},
-          ${details.symptoms || null},
-          ${details.duration || null},
-          ${details.hasFiles || false}
-        )
-      `
-    } else if (type === "medical-certificate" && details) {
-      await sql`
-        INSERT INTO certificate_details (
-          request_id,
-          start_date,
-          end_date,
-          condition,
-          has_files
-        ) 
-        VALUES (
-          ${request.id},
-          ${details.startDate ? new Date(details.startDate) : null},
-          ${details.endDate ? new Date(details.endDate) : null},
-          ${details.condition || null},
-          ${details.hasFiles || false}
-        )
-      `
-    } else if (type === "prescription" && details) {
-      await sql`
-        INSERT INTO prescription_details (
-          request_id,
-          medication,
-          dosage,
-          delivery_option,
-          has_files
-        ) 
-        VALUES (
-          ${request.id},
-          ${details.medication || ""},
-          ${details.dosage || null},
-          ${details.deliveryOption || "pharmacy"},
-          ${details.hasFiles || false}
-        )
-      `
-    }
-
-    return {
-      ...request,
-      details: details || {},
-    }
-  })
-
-  return result
-}
-
-export async function updateConsultRequest(
-  id: string,
-  requestData: Partial<ConsultRequest>,
-): Promise<ConsultRequest | null> {
-  const { status, doctorId, doctorNotes, details } = requestData
-
-  // Start a transaction
-  const result = await sql.begin(async (sql) => {
-    // Build the SET clause dynamically based on provided fields
-    const setClauses = []
-    const params = []
-
-    if (status !== undefined) {
-      setClauses.push("status = $1")
-      params.push(status)
-    }
-
-    if (doctorId !== undefined) {
-      setClauses.push("doctor_id = $" + (params.length + 1))
-      params.push(doctorId)
-    }
-
-    if (doctorNotes !== undefined) {
-      setClauses.push("doctor_notes = $" + (params.length + 1))
-      params.push(doctorNotes)
-    }
-
-    if (status === "completed") {
-      setClauses.push("completed_at = CURRENT_TIMESTAMP")
-    }
-
-    if (status === "cancelled") {
-      setClauses.push("cancelled_at = CURRENT_TIMESTAMP")
-
-      if (requestData.cancelReason) {
-        setClauses.push("cancel_reason = $" + (params.length + 1))
-        params.push(requestData.cancelReason)
-      }
-    }
-
-    if (setClauses.length === 0) {
-      return getConsultRequestById(id)
-    }
-
-    // Add the id parameter
-    params.push(id)
-
-    const query = `
-      UPDATE medical_requests 
-      SET ${setClauses.join(", ")} 
-      WHERE id = $${params.length}
-      RETURNING 
-        id, 
-        user_id as "userId",
-        doctor_id as "doctorId",
-        type,
-        status,
-        reason,
-        date,
-        time,
-        patient_name as "patientName",
-        email,
-        phone,
-        doctor_notes as "doctorNotes",
-        created_at as "createdAt",
-        completed_at as "completedAt",
-        cancelled_at as "cancelledAt",
-        cancel_reason as "cancelReason"
-    `
-
-    const requests = await sql.unsafe(query, ...params)
-
-    if (requests.length === 0) {
-      return null
-    }
-
-    const request = requests[0]
-
-    // Update details if provided
-    if (details) {
-      if (request.type === "consultation") {
-        await sql`
-          UPDATE consultation_details
-          SET
-            symptoms = COALESCE(${details.symptoms}, symptoms),
-            duration = COALESCE(${details.duration}, duration),
-            has_files = COALESCE(${details.hasFiles}, has_files)
-          WHERE request_id = ${id}
-        `
-      } else if (request.type === "medical-certificate") {
-        await sql`
-          UPDATE certificate_details
-          SET
-            start_date = COALESCE(${details.startDate ? new Date(details.startDate) : null}, start_date),
-            end_date = COALESCE(${details.endDate ? new Date(details.endDate) : null}, end_date),
-            condition = COALESCE(${details.condition}, condition),
-            has_files = COALESCE(${details.hasFiles}, has_files)
-          WHERE request_id = ${id}
-        `
-      } else if (request.type === "prescription") {
-        await sql`
-          UPDATE prescription_details
-          SET
-            medication = COALESCE(${details.medication}, medication),
-            dosage = COALESCE(${details.dosage}, dosage),
-            delivery_option = COALESCE(${details.deliveryOption}, delivery_option),
-            has_files = COALESCE(${details.hasFiles}, has_files)
-          WHERE request_id = ${id}
-        `
-      }
-    }
-
-    // Get the updated request with details
-    return getConsultRequestById(id)
-  })
-
-  return result
-}
-
-export async function markConsultRequestAsCompleted(id: string): Promise<ConsultRequest | null> {
-  return updateConsultRequest(id, {
+  // Mark as completed
+  const updatedRequest = {
+    ...db.consultRequests[requestIndex],
     status: "completed",
-  })
+    completedAt: new Date().toISOString(),
+  }
+
+  db.consultRequests[requestIndex] = updatedRequest
+  saveDatabase(db)
+
+  // Also update the consultations localStorage for compatibility
+  updateConsultationsLocalStorage(db.consultRequests)
+
+  return updatedRequest
 }
 
-export async function completeConsultRequest(id: string, doctorNotes: string): Promise<ConsultRequest | null> {
-  return updateConsultRequest(id, {
-    status: "completed",
-    doctorNotes,
-  })
-}
+export function cancelConsultRequest(id: string, reason?: string): ConsultRequest | null {
+  const db = getDatabase()
+  const requestIndex = db.consultRequests.findIndex((req) => req.id === id)
 
-export async function cancelConsultRequest(id: string, reason?: string): Promise<ConsultRequest | null> {
-  return updateConsultRequest(id, {
+  if (requestIndex === -1) return null
+
+  // Mark as cancelled
+  const updatedRequest = {
+    ...db.consultRequests[requestIndex],
     status: "cancelled",
-    cancelReason: reason,
-  })
+    cancelledAt: new Date().toISOString(),
+    cancelReason: reason || "Cancelled by user",
+  }
+
+  db.consultRequests[requestIndex] = updatedRequest
+  saveDatabase(db)
+
+  // Also update the consultations localStorage for compatibility
+  updateConsultationsLocalStorage(db.consultRequests)
+
+  return updatedRequest
 }
 
-export async function deleteConsultRequest(id: string): Promise<boolean> {
-  const result = await sql`
-    DELETE FROM medical_requests
-    WHERE id = ${id}
-  `
+export function deleteConsultRequest(id: string): boolean {
+  const db = getDatabase()
+  const initialLength = db.consultRequests.length
 
-  return result.count > 0
+  db.consultRequests = db.consultRequests.filter((req) => req.id !== id)
+  saveDatabase(db)
+
+  // Also update the consultations localStorage for compatibility
+  updateConsultationsLocalStorage(db.consultRequests)
+
+  return db.consultRequests.length < initialLength
 }
 
 // Doctor functions
-export async function getAllDoctors(): Promise<Doctor[]> {
-  const doctors = await sql`
-    SELECT 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      specialty,
-      phone, 
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-    FROM doctors
-    ORDER BY created_at DESC
-  `
-
-  return doctors
+export function getAllDoctors(): Doctor[] {
+  const db = getDatabase()
+  return db.doctors || []
 }
 
-export async function getDoctorById(id: string): Promise<Doctor | null> {
-  const doctors = await sql`
-    SELECT 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      specialty,
-      phone, 
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-    FROM doctors
-    WHERE id = ${id}
-  `
-
-  return doctors.length > 0 ? doctors[0] : null
+export function getDoctorById(id: string): Doctor | null {
+  const db = getDatabase()
+  return (db.doctors || []).find((doctor) => doctor.id === id) || null
 }
 
-export async function getDoctorByEmail(email: string): Promise<Doctor | null> {
-  const doctors = await sql`
-    SELECT 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      specialty,
-      phone, 
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-    FROM doctors
-    WHERE email = ${email}
-  `
-
-  return doctors.length > 0 ? doctors[0] : null
+export function getDoctorByEmail(email: string): Doctor | null {
+  const db = getDatabase()
+  return (db.doctors || []).find((doctor) => doctor.email === email) || null
 }
 
-export async function createDoctor(doctorData: Omit<Doctor, "id" | "createdAt" | "updatedAt">): Promise<Doctor> {
-  const { email, firstName, lastName, specialty, phone } = doctorData
+export function createDoctor(doctorData: Omit<Doctor, "id" | "createdAt" | "updatedAt">): Doctor {
+  const db = getDatabase()
 
-  const doctors = await sql`
-    INSERT INTO doctors (
-      email, 
-      first_name, 
-      last_name, 
-      specialty,
-      phone
-    ) 
-    VALUES (
-      ${email}, 
-      ${firstName}, 
-      ${lastName}, 
-      ${specialty || null}, 
-      ${phone || null}
-    )
-    RETURNING 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      specialty,
-      phone, 
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-  `
+  // Check if doctor with this email already exists
+  const existingDoctor = (db.doctors || []).find((doctor) => doctor.email === doctorData.email)
+  if (existingDoctor) {
+    throw new Error("Doctor with this email already exists")
+  }
 
-  return doctors[0]
+  // Initialize doctors array if it doesn't exist
+  if (!db.doctors) {
+    db.doctors = []
+  }
+
+  const newDoctor: Doctor = {
+    ...doctorData,
+    id: `doc${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastLogin: new Date().toISOString(),
+  }
+
+  db.doctors.push(newDoctor)
+  saveDatabase(db)
+
+  return newDoctor
 }
 
-export async function updateDoctor(id: string, doctorData: Partial<Doctor>): Promise<Doctor | null> {
-  const { email, firstName, lastName, specialty, phone } = doctorData
+export function updateDoctor(id: string, doctorData: Partial<Doctor>): Doctor | null {
+  const db = getDatabase()
 
-  // Build the SET clause dynamically based on provided fields
-  const setClauses = []
-  const params = []
-
-  if (email !== undefined) {
-    setClauses.push("email = $1")
-    params.push(email)
+  if (!db.doctors) {
+    db.doctors = []
+    return null
   }
 
-  if (firstName !== undefined) {
-    setClauses.push("first_name = $" + (params.length + 1))
-    params.push(firstName)
+  const doctorIndex = db.doctors.findIndex((doctor) => doctor.id === id)
+
+  if (doctorIndex === -1) return null
+
+  // Update the doctor
+  const updatedDoctor = {
+    ...db.doctors[doctorIndex],
+    ...doctorData,
+    updatedAt: new Date().toISOString(),
   }
 
-  if (lastName !== undefined) {
-    setClauses.push("last_name = $" + (params.length + 1))
-    params.push(lastName)
-  }
+  db.doctors[doctorIndex] = updatedDoctor
+  saveDatabase(db)
 
-  if (specialty !== undefined) {
-    setClauses.push("specialty = $" + (params.length + 1))
-    params.push(specialty)
-  }
-
-  if (phone !== undefined) {
-    setClauses.push("phone = $" + (params.length + 1))
-    params.push(phone)
-  }
-
-  // Always update the updated_at timestamp
-  setClauses.push("updated_at = CURRENT_TIMESTAMP")
-
-  if (setClauses.length === 0) {
-    return getDoctorById(id)
-  }
-
-  // Add the id parameter
-  params.push(id)
-
-  const query = `
-    UPDATE doctors 
-    SET ${setClauses.join(", ")} 
-    WHERE id = $${params.length}
-    RETURNING 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      specialty,
-      phone, 
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-  `
-
-  const doctors = await sql.unsafe(query, ...params)
-
-  return doctors.length > 0 ? doctors[0] : null
+  return updatedDoctor
 }
 
-export async function updateDoctorLoginTime(id: string): Promise<Doctor | null> {
-  const doctors = await sql`
-    UPDATE doctors 
-    SET 
-      last_login = CURRENT_TIMESTAMP,
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${id}
-    RETURNING 
-      id, 
-      email, 
-      first_name as "firstName", 
-      last_name as "lastName", 
-      specialty,
-      phone, 
-      created_at as "createdAt", 
-      updated_at as "updatedAt", 
-      last_login as "lastLogin"
-  `
+export function updateDoctorLoginTime(id: string): Doctor | null {
+  const db = getDatabase()
 
-  return doctors.length > 0 ? doctors[0] : null
+  if (!db.doctors) {
+    db.doctors = []
+    return null
+  }
+
+  const doctorIndex = db.doctors.findIndex((doctor) => doctor.id === id)
+
+  if (doctorIndex === -1) return null
+
+  // Update the doctor's last login time
+  const updatedDoctor = {
+    ...db.doctors[doctorIndex],
+    lastLogin: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  db.doctors[doctorIndex] = updatedDoctor
+  saveDatabase(db)
+
+  return updatedDoctor
 }
 
-export async function deleteDoctor(id: string): Promise<boolean> {
-  const result = await sql`
-    DELETE FROM doctors
-    WHERE id = ${id}
-  `
+export function deleteDoctor(id: string): boolean {
+  const db = getDatabase()
 
-  return result.count > 0
+  if (!db.doctors) {
+    db.doctors = []
+    return false
+  }
+
+  const initialLength = db.doctors.length
+
+  // Remove the doctor
+  db.doctors = db.doctors.filter((doctor) => doctor.id !== id)
+
+  saveDatabase(db)
+
+  return db.doctors.length < initialLength
 }
 
 // Helper function to update the consultations localStorage for compatibility with doctor dashboard
