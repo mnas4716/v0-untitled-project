@@ -7,15 +7,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, CheckCircle, ArrowRight, FileText, Upload } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { submitConsultation } from "../actions"
+import { requestPrescription } from "../../actions"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
-export default function ConsultPage() {
+export default function PrescriptionRequestPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [step, setStep] = useState(1)
@@ -25,7 +26,8 @@ export default function ConsultPage() {
     email: "",
     phone: "",
     dob: "",
-    reason: "",
+    medication: "",
+    deliveryOption: "pharmacy",
   })
   const [files, setFiles] = useState<FileList | null>(null)
   const [fileError, setFileError] = useState("")
@@ -34,6 +36,10 @@ export default function ConsultPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleRadioChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, deliveryOption: value }))
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,7 +84,7 @@ export default function ConsultPage() {
         formDataObj.append("fileCount", "0")
       }
 
-      const result = await submitConsultation(formDataObj)
+      const result = await requestPrescription(formDataObj)
 
       if (result.success && result.redirectUrl) {
         router.push(result.redirectUrl)
@@ -97,20 +103,21 @@ export default function ConsultPage() {
   const prevStep = () => setStep(step - 1)
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <SiteHeader />
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <SiteHeader activePage="services" />
 
-      <div className="container mx-auto px-4 py-8">
-        <Link href="/" className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors">
+      <div className="container mx-auto px-4 py-8 flex-grow">
+        <Link
+          href="/prescription"
+          className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to home
+          Back to Prescription Information
         </Link>
 
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Request a Consultation</h1>
-          <p className="text-slate-600 mb-8">
-            Fill in the details below to request a consultation with one of our doctors
-          </p>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Request a Prescription</h1>
+          <p className="text-slate-600 mb-8">Fill in the details below to request a prescription</p>
 
           {submitError && (
             <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">{submitError}</div>
@@ -118,7 +125,7 @@ export default function ConsultPage() {
 
           <div className="mb-8">
             <div className="relative flex items-center justify-between">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex flex-col items-center z-10">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
@@ -128,14 +135,14 @@ export default function ConsultPage() {
                     {step > i ? <CheckCircle className="h-5 w-5" /> : i}
                   </div>
                   <span className="text-sm text-slate-600">
-                    {i === 1 ? "Details" : i === 2 ? "Reason" : "Documents"}
+                    {i === 1 ? "Details" : i === 2 ? "Medication" : i === 3 ? "Delivery" : "Documents"}
                   </span>
                 </div>
               ))}
               <div className="absolute h-1 bg-slate-200 left-0 right-0 top-5 -z-10"></div>
               <div
                 className="absolute h-1 bg-blue-600 left-0 top-5 -z-10 transition-all duration-300"
-                style={{ width: `${(step - 1) * 50}%` }}
+                style={{ width: `${(step - 1) * 33.33}%` }}
               ></div>
             </div>
           </div>
@@ -230,15 +237,15 @@ export default function ConsultPage() {
             {step === 2 && (
               <Card className="border-0 shadow-md rounded-2xl mb-6 overflow-hidden transform transition-all hover:shadow-lg">
                 <CardHeader className="bg-blue-50">
-                  <CardTitle>Consultation Reason</CardTitle>
-                  <CardDescription>Please provide details about why you're seeking a consultation</CardDescription>
+                  <CardTitle>Medication Details</CardTitle>
+                  <CardDescription>Please provide details about the medication you need</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6">
                   <Textarea
-                    name="reason"
-                    value={formData.reason}
+                    name="medication"
+                    value={formData.medication}
                     onChange={handleChange}
-                    placeholder="Please describe your symptoms or reason for consultation in detail..."
+                    placeholder="Enter the name of the medication, dosage, and any other relevant details..."
                     className="min-h-[150px] border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
                     required
                   />
@@ -264,6 +271,54 @@ export default function ConsultPage() {
             )}
 
             {step === 3 && (
+              <Card className="border-0 shadow-md rounded-2xl mb-6 overflow-hidden transform transition-all hover:shadow-lg">
+                <CardHeader className="bg-blue-50">
+                  <CardTitle>Delivery Option</CardTitle>
+                  <CardDescription>Please select how you would like to receive your prescription</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <RadioGroup value={formData.deliveryOption} onValueChange={handleRadioChange} className="space-y-4">
+                    <div className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-slate-50">
+                      <RadioGroupItem value="pharmacy" id="pharmacy" />
+                      <Label htmlFor="pharmacy" className="flex-1 cursor-pointer">
+                        Send to my local pharmacy
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-slate-50">
+                      <RadioGroupItem value="email" id="email" />
+                      <Label htmlFor="email" className="flex-1 cursor-pointer">
+                        Email me the prescription
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-slate-50">
+                      <RadioGroupItem value="delivery" id="delivery" />
+                      <Label htmlFor="delivery" className="flex-1 cursor-pointer">
+                        Home delivery (additional fees may apply)
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </CardContent>
+                <CardFooter className="flex justify-between bg-slate-50">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={prevStep}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1 flex items-center"
+                  >
+                    Continue <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+
+            {step === 4 && (
               <Card className="border-0 shadow-md rounded-2xl overflow-hidden transform transition-all hover:shadow-lg">
                 <CardHeader className="bg-blue-50">
                   <CardTitle>Upload Documents</CardTitle>

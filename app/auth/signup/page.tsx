@@ -11,17 +11,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { signUp } from "../../actions"
+import { initDatabase } from "@/lib/database-service"
 
 export default function SignUpPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     agreeTerms: false,
+  })
+
+  // Initialize database on component mount
+  useState(() => {
+    if (typeof window !== "undefined") {
+      initDatabase()
+    }
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,12 +45,23 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
     try {
-      await signUp(formData.firstName, formData.lastName, formData.email, formData.password)
-      router.push("/dashboard")
-    } catch (error) {
+      const result = await signUp(formData.firstName, formData.lastName, formData.email, formData.password)
+
+      if (result.success) {
+        // Store user in localStorage for client-side auth
+        if (typeof window !== "undefined" && result.user) {
+          localStorage.setItem("user", JSON.stringify(result.user))
+        }
+        router.push("/dashboard")
+      } else {
+        setError(result.error || "Failed to create account. Please try again.")
+      }
+    } catch (error: any) {
       console.error("Sign up failed:", error)
+      setError(error.message || "An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -63,6 +83,10 @@ export default function SignUpPage() {
             <h1 className="text-2xl font-bold mt-6 mb-2">Create your account</h1>
             <p className="text-gray-600">Sign up to get started with freedoc</p>
           </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">{error}</div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">

@@ -1,14 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Search, Plus, Filter, Download, MoreHorizontal, FileText, Calendar, Mail, Phone } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
@@ -30,150 +29,50 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-
-// Mock patient data
-const patients = [
-  {
-    id: "P1001",
-    firstName: "James",
-    lastName: "Smith",
-    email: "james.smith@example.com",
-    phone: "(555) 123-4567",
-    dob: "1985-06-15",
-    gender: "Male",
-    address: "123 Main St, Anytown, CA 12345",
-    insuranceProvider: "Blue Cross",
-    insuranceNumber: "BC123456789",
-    medicalConditions: ["Hypertension", "Type 2 Diabetes"],
-    allergies: ["Penicillin"],
-    lastVisit: "2023-04-10",
-    status: "active",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "P1002",
-    firstName: "Sarah",
-    lastName: "Williams",
-    email: "sarah.williams@example.com",
-    phone: "(555) 234-5678",
-    dob: "1990-08-22",
-    gender: "Female",
-    address: "456 Oak Ave, Somewhere, NY 67890",
-    insuranceProvider: "Aetna",
-    insuranceNumber: "AE987654321",
-    medicalConditions: ["Asthma"],
-    allergies: ["Latex", "Peanuts"],
-    lastVisit: "2023-05-05",
-    status: "active",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "P1003",
-    firstName: "Michael",
-    lastName: "Brown",
-    email: "michael.brown@example.com",
-    phone: "(555) 345-6789",
-    dob: "1978-11-30",
-    gender: "Male",
-    address: "789 Pine Rd, Elsewhere, TX 54321",
-    insuranceProvider: "UnitedHealthcare",
-    insuranceNumber: "UH567891234",
-    medicalConditions: ["Arthritis"],
-    allergies: [],
-    lastVisit: "2023-03-15",
-    status: "active",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "P1004",
-    firstName: "Emily",
-    lastName: "Davis",
-    email: "emily.davis@example.com",
-    phone: "(555) 456-7890",
-    dob: "1995-02-18",
-    gender: "Female",
-    address: "101 Cedar Ln, Nowhere, FL 13579",
-    insuranceProvider: "Cigna",
-    insuranceNumber: "CI246813579",
-    medicalConditions: [],
-    allergies: ["Sulfa drugs"],
-    lastVisit: "2023-05-12",
-    status: "active",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "P1005",
-    firstName: "Robert",
-    lastName: "Jones",
-    email: "robert.jones@example.com",
-    phone: "(555) 567-8901",
-    dob: "1972-09-08",
-    gender: "Male",
-    address: "202 Maple Dr, Anywhere, WA 97531",
-    insuranceProvider: "Medicare",
-    insuranceNumber: "MC135792468",
-    medicalConditions: ["Coronary Artery Disease", "COPD"],
-    allergies: ["Aspirin"],
-    lastVisit: "2023-02-28",
-    status: "inactive",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "P1006",
-    firstName: "Jennifer",
-    lastName: "Garcia",
-    email: "jennifer.garcia@example.com",
-    phone: "(555) 678-9012",
-    dob: "1988-04-25",
-    gender: "Female",
-    address: "303 Birch Blvd, Someplace, IL 86420",
-    insuranceProvider: "Humana",
-    insuranceNumber: "HU864209753",
-    medicalConditions: ["Migraine"],
-    allergies: ["Shellfish"],
-    lastVisit: "2023-04-22",
-    status: "active",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "P1007",
-    firstName: "David",
-    lastName: "Martinez",
-    email: "david.martinez@example.com",
-    phone: "(555) 789-0123",
-    dob: "1982-12-10",
-    gender: "Male",
-    address: "404 Elm St, Elsewhere, GA 75319",
-    insuranceProvider: "Kaiser Permanente",
-    insuranceNumber: "KP753198642",
-    medicalConditions: ["Depression", "Anxiety"],
-    allergies: [],
-    lastVisit: "2023-05-08",
-    status: "active",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-]
+import { getAllUsers, type User } from "@/lib/database-service"
 
 export default function PatientsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedPatients, setSelectedPatients] = useState<string[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [selectedPatient, setSelectedPatient] = useState<(typeof patients)[0] | null>(null)
+  const [selectedPatient, setSelectedPatient] = useState<User | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [patients, setPatients] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Filter patients based on search term and status
-  const filteredPatients = patients.filter((patient) => {
-    const matchesSearch =
-      patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.id.toLowerCase().includes(searchTerm.toLowerCase())
+  // Load patients from the user database
+  useEffect(() => {
+    const loadPatients = () => {
+      setIsLoading(true)
+      try {
+        if (typeof window !== "undefined") {
+          // Get users from the database service
+          const users = getAllUsers()
+          setPatients(users)
+        }
+      } catch (error) {
+        console.error("Error loading patients:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-    const matchesStatus = statusFilter === "all" || patient.status === statusFilter
+    loadPatients()
+  }, [])
 
-    return matchesSearch && matchesStatus
-  })
+  // Filter patients based on search term
+  const filteredPatients = useMemo(() => {
+    return patients.filter((patient) => {
+      const matchesSearch =
+        patient.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.id?.toLowerCase().includes(searchTerm.toLowerCase())
+
+      return matchesSearch
+    })
+  }, [patients, searchTerm])
 
   const togglePatientSelection = (patientId: string) => {
     setSelectedPatients((prev) => {
@@ -193,9 +92,19 @@ export default function PatientsPage() {
     }
   }
 
-  const handleViewPatient = (patient: (typeof patients)[0]) => {
+  const handleViewPatient = (patient: User) => {
     setSelectedPatient(patient)
     setIsViewDialogOpen(true)
+  }
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A"
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
   }
 
   return (
@@ -277,27 +186,6 @@ export default function PatientsPage() {
                 <Label htmlFor="address">Address</Label>
                 <Input id="address" placeholder="Full address" />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="insurance">Insurance Provider</Label>
-                  <Input id="insurance" placeholder="Insurance provider" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="insuranceNumber">Insurance Number</Label>
-                  <Input id="insuranceNumber" placeholder="Insurance number" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="medicalConditions">Medical Conditions</Label>
-                <Input id="medicalConditions" placeholder="Separate with commas" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="allergies">Allergies</Label>
-                <Input id="allergies" placeholder="Separate with commas" />
-              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
@@ -360,16 +248,21 @@ export default function PatientsPage() {
                   <TableHead>Patient</TableHead>
                   <TableHead>ID</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Insurance</TableHead>
-                  <TableHead>Last Visit</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Registered</TableHead>
+                  <TableHead>Last Login</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPatients.length === 0 ? (
+                {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      Loading patients...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredPatients.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       No patients found
                     </TableCell>
                   </TableRow>
@@ -386,13 +279,9 @@ export default function PatientsPage() {
                       <TableCell>
                         <div className="flex items-center">
                           <Avatar className="h-8 w-8 mr-2">
-                            <AvatarImage
-                              src={patient.avatar || "/placeholder.svg"}
-                              alt={`${patient.firstName} ${patient.lastName}`}
-                            />
                             <AvatarFallback>
-                              {patient.firstName[0]}
-                              {patient.lastName[0]}
+                              {patient.firstName?.[0] || "?"}
+                              {patient.lastName?.[0] || "?"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -400,7 +289,7 @@ export default function PatientsPage() {
                               {patient.firstName} {patient.lastName}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {patient.dob} ({new Date().getFullYear() - new Date(patient.dob).getFullYear()} yrs)
+                              {patient.dob ? formatDate(patient.dob) : "No DOB"}
                             </div>
                           </div>
                         </div>
@@ -408,20 +297,10 @@ export default function PatientsPage() {
                       <TableCell>{patient.id}</TableCell>
                       <TableCell>
                         <div className="text-sm">{patient.email}</div>
-                        <div className="text-xs text-gray-500">{patient.phone}</div>
+                        <div className="text-xs text-gray-500">{patient.phone || "No phone"}</div>
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{patient.insuranceProvider}</div>
-                        <div className="text-xs text-gray-500">{patient.insuranceNumber}</div>
-                      </TableCell>
-                      <TableCell>{new Date(patient.lastVisit).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        {patient.status === "active" ? (
-                          <Badge className="bg-green-100 text-green-800 border-green-200">Active</Badge>
-                        ) : (
-                          <Badge className="bg-gray-100 text-gray-800 border-gray-200">Inactive</Badge>
-                        )}
-                      </TableCell>
+                      <TableCell>{formatDate(patient.createdAt)}</TableCell>
+                      <TableCell>{patient.lastLogin ? formatDate(patient.lastLogin) : "Never"}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -456,14 +335,6 @@ export default function PatientsPage() {
             <div className="text-sm text-gray-500">
               Showing {filteredPatients.length} of {patients.length} patients
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                Next
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -479,13 +350,9 @@ export default function PatientsPage() {
             <div className="grid md:grid-cols-3 gap-6">
               <div className="md:col-span-1 flex flex-col items-center">
                 <Avatar className="h-24 w-24 mb-4">
-                  <AvatarImage
-                    src={selectedPatient.avatar || "/placeholder.svg"}
-                    alt={`${selectedPatient.firstName} ${selectedPatient.lastName}`}
-                  />
                   <AvatarFallback className="text-2xl">
-                    {selectedPatient.firstName[0]}
-                    {selectedPatient.lastName[0]}
+                    {selectedPatient.firstName?.[0] || "?"}
+                    {selectedPatient.lastName?.[0] || "?"}
                   </AvatarFallback>
                 </Avatar>
                 <h3 className="text-xl font-semibold text-center">
@@ -517,17 +384,21 @@ export default function PatientsPage() {
                   <TabsContent value="info" className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-gray-500">Date of Birth</p>
-                        <p>
-                          {selectedPatient.dob} (
-                          {new Date().getFullYear() - new Date(selectedPatient.dob).getFullYear()} yrs)
-                        </p>
+                        <p className="text-sm text-gray-500">First Name</p>
+                        <p>{selectedPatient.firstName}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Gender</p>
-                        <p>{selectedPatient.gender}</p>
+                        <p className="text-sm text-gray-500">Last Name</p>
+                        <p>{selectedPatient.lastName}</p>
                       </div>
                     </div>
+
+                    {selectedPatient.dob && (
+                      <div>
+                        <p className="text-sm text-gray-500">Date of Birth</p>
+                        <p>{formatDate(selectedPatient.dob)}</p>
+                      </div>
+                    )}
 
                     <div>
                       <p className="text-sm text-gray-500">Contact Information</p>
@@ -535,54 +406,34 @@ export default function PatientsPage() {
                         <Mail className="h-4 w-4 mr-2 text-gray-500" />
                         <p>{selectedPatient.email}</p>
                       </div>
-                      <div className="flex items-center mt-1">
-                        <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                        <p>{selectedPatient.phone}</p>
-                      </div>
+                      {selectedPatient.phone && (
+                        <div className="flex items-center mt-1">
+                          <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                          <p>{selectedPatient.phone}</p>
+                        </div>
+                      )}
                     </div>
 
                     <div>
-                      <p className="text-sm text-gray-500">Address</p>
-                      <p>{selectedPatient.address}</p>
+                      <p className="text-sm text-gray-500">Registration Date</p>
+                      <p>{formatDate(selectedPatient.createdAt)}</p>
                     </div>
 
                     <div>
-                      <p className="text-sm text-gray-500">Insurance</p>
-                      <p>
-                        {selectedPatient.insuranceProvider} - {selectedPatient.insuranceNumber}
-                      </p>
+                      <p className="text-sm text-gray-500">Last Login</p>
+                      <p>{selectedPatient.lastLogin ? formatDate(selectedPatient.lastLogin) : "Never"}</p>
                     </div>
                   </TabsContent>
 
                   <TabsContent value="medical" className="space-y-4">
                     <div>
                       <p className="text-sm text-gray-500">Medical Conditions</p>
-                      {selectedPatient.medicalConditions.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedPatient.medicalConditions.map((condition) => (
-                            <Badge key={condition} variant="outline">
-                              {condition}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p>No known medical conditions</p>
-                      )}
+                      <p>Information not available</p>
                     </div>
 
                     <div>
                       <p className="text-sm text-gray-500">Allergies</p>
-                      {selectedPatient.allergies.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedPatient.allergies.map((allergy) => (
-                            <Badge key={allergy} variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                              {allergy}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p>No known allergies</p>
-                      )}
+                      <p>Information not available</p>
                     </div>
 
                     <div>
@@ -594,29 +445,7 @@ export default function PatientsPage() {
                   <TabsContent value="visits" className="space-y-4">
                     <div className="space-y-3">
                       <div className="p-3 border rounded-md">
-                        <div className="flex justify-between">
-                          <p className="font-medium">General Checkup</p>
-                          <p className="text-sm text-gray-500">
-                            {new Date(selectedPatient.lastVisit).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <p className="text-sm text-gray-500">Dr. Johnson</p>
-                        <p className="text-sm mt-2">Routine checkup, all vitals normal. Follow up in 6 months.</p>
-                      </div>
-
-                      <div className="p-3 border rounded-md">
-                        <div className="flex justify-between">
-                          <p className="font-medium">Prescription Renewal</p>
-                          <p className="text-sm text-gray-500">
-                            {new Date(
-                              new Date(selectedPatient.lastVisit).setMonth(
-                                new Date(selectedPatient.lastVisit).getMonth() - 3,
-                              ),
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <p className="text-sm text-gray-500">Dr. Miller</p>
-                        <p className="text-sm mt-2">Renewed prescriptions for 3 months.</p>
+                        <p className="text-center text-gray-500">No visit history available</p>
                       </div>
                     </div>
                   </TabsContent>

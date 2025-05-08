@@ -1,15 +1,20 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function ComingSoonPage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Redirect to the main page
+    router.replace("/")
+  }, [router])
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white p-4">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <Link href="/admin/signin">
-          <Button variant="outline" size="sm">
-            Admin Access
-          </Button>
-        </Link>
+        <p>Redirecting to main page...</p>
       </div>
     </div>
   )

@@ -11,11 +11,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, CheckCircle, ArrowRight, FileText, Upload } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { submitConsultation } from "../actions"
+import { requestMedicalCertificate } from "../../actions"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
-export default function ConsultPage() {
+export default function MedicalCertificateRequestPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [step, setStep] = useState(1)
@@ -26,6 +26,8 @@ export default function ConsultPage() {
     phone: "",
     dob: "",
     reason: "",
+    startDate: "",
+    endDate: "",
   })
   const [files, setFiles] = useState<FileList | null>(null)
   const [fileError, setFileError] = useState("")
@@ -78,7 +80,7 @@ export default function ConsultPage() {
         formDataObj.append("fileCount", "0")
       }
 
-      const result = await submitConsultation(formDataObj)
+      const result = await requestMedicalCertificate(formDataObj)
 
       if (result.success && result.redirectUrl) {
         router.push(result.redirectUrl)
@@ -97,20 +99,21 @@ export default function ConsultPage() {
   const prevStep = () => setStep(step - 1)
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <SiteHeader />
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <SiteHeader activePage="services" />
 
-      <div className="container mx-auto px-4 py-8">
-        <Link href="/" className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors">
+      <div className="container mx-auto px-4 py-8 flex-grow">
+        <Link
+          href="/medical-certificate"
+          className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to home
+          Back to Medical Certificate Information
         </Link>
 
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Request a Consultation</h1>
-          <p className="text-slate-600 mb-8">
-            Fill in the details below to request a consultation with one of our doctors
-          </p>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Request a Medical Certificate</h1>
+          <p className="text-slate-600 mb-8">Fill in the details below to request a medical certificate</p>
 
           {submitError && (
             <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">{submitError}</div>
@@ -118,7 +121,7 @@ export default function ConsultPage() {
 
           <div className="mb-8">
             <div className="relative flex items-center justify-between">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex flex-col items-center z-10">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
@@ -128,14 +131,14 @@ export default function ConsultPage() {
                     {step > i ? <CheckCircle className="h-5 w-5" /> : i}
                   </div>
                   <span className="text-sm text-slate-600">
-                    {i === 1 ? "Details" : i === 2 ? "Reason" : "Documents"}
+                    {i === 1 ? "Details" : i === 2 ? "Reason" : i === 3 ? "Dates" : "Documents"}
                   </span>
                 </div>
               ))}
               <div className="absolute h-1 bg-slate-200 left-0 right-0 top-5 -z-10"></div>
               <div
                 className="absolute h-1 bg-blue-600 left-0 top-5 -z-10 transition-all duration-300"
-                style={{ width: `${(step - 1) * 50}%` }}
+                style={{ width: `${(step - 1) * 33.33}%` }}
               ></div>
             </div>
           </div>
@@ -230,15 +233,15 @@ export default function ConsultPage() {
             {step === 2 && (
               <Card className="border-0 shadow-md rounded-2xl mb-6 overflow-hidden transform transition-all hover:shadow-lg">
                 <CardHeader className="bg-blue-50">
-                  <CardTitle>Consultation Reason</CardTitle>
-                  <CardDescription>Please provide details about why you're seeking a consultation</CardDescription>
+                  <CardTitle>Reason for Certificate</CardTitle>
+                  <CardDescription>Please describe why you need a medical certificate</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6">
                   <Textarea
                     name="reason"
                     value={formData.reason}
                     onChange={handleChange}
-                    placeholder="Please describe your symptoms or reason for consultation in detail..."
+                    placeholder="Describe your symptoms or reason for needing a medical certificate..."
                     className="min-h-[150px] border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
                     required
                   />
@@ -264,6 +267,60 @@ export default function ConsultPage() {
             )}
 
             {step === 3 && (
+              <Card className="border-0 shadow-md rounded-2xl mb-6 overflow-hidden transform transition-all hover:shadow-lg">
+                <CardHeader className="bg-blue-50">
+                  <CardTitle>Certificate Period</CardTitle>
+                  <CardDescription>Please specify the start and end dates for your certificate</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate">Start Date</Label>
+                      <Input
+                        id="startDate"
+                        name="startDate"
+                        type="date"
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        required
+                        className="border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endDate">End Date</Label>
+                      <Input
+                        id="endDate"
+                        name="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={handleChange}
+                        required
+                        className="border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between bg-slate-50">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={prevStep}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1 flex items-center"
+                  >
+                    Continue <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+
+            {step === 4 && (
               <Card className="border-0 shadow-md rounded-2xl overflow-hidden transform transition-all hover:shadow-lg">
                 <CardHeader className="bg-blue-50">
                   <CardTitle>Upload Documents</CardTitle>

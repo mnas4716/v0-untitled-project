@@ -35,9 +35,21 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-slate-500">Welcome back, {user?.firstName || "User"}! Manage your healthcare needs here.</p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-slate-500">
+            Welcome back, {user?.firstName || "User"}! Manage your healthcare needs here.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/consult">Book Consultation</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/profile">View Profile</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

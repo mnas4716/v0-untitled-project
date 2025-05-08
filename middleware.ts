@@ -1,53 +1,29 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-// Paths that should be accessible even when in "coming soon" mode
-const ALLOWED_PATHS = [
-  "/admin/signin",
-  "/coming-soon",
-  "/api/", // Allow API routes to work
-  "/_next/", // Allow Next.js assets
-  "/favicon.ico",
-]
-
-// Special bypass token for admin access (you can change this to something more secure)
-const ADMIN_BYPASS_TOKEN = "admin-preview"
-
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  // Disable maintenance mode redirects
+  const maintenanceMode = false // Set to false to disable maintenance mode
 
-  // Check if the path is allowed to be accessed directly
-  const isAllowedPath = ALLOWED_PATHS.some((path) => pathname.startsWith(path))
+  if (maintenanceMode) {
+    // Check if the request is for the maintenance page itself to avoid redirect loops
+    if (request.nextUrl.pathname === "/coming-soon") {
+      return NextResponse.next()
+    }
 
-  // Check for admin bypass cookie or query parameter
-  const cookies = request.cookies
-  const hasAdminBypass = cookies.has(ADMIN_BYPASS_TOKEN) || request.nextUrl.searchParams.has(ADMIN_BYPASS_TOKEN)
+    // Check if the request is for the admin sign-in page
+    if (request.nextUrl.pathname === "/admin/signin") {
+      return NextResponse.next()
+    }
 
-  // If not an allowed path and no admin bypass, redirect to coming soon page
-  if (!isAllowedPath && !hasAdminBypass) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/coming-soon"
-    return NextResponse.redirect(url)
+    // Redirect all other requests to the maintenance page
+    return NextResponse.redirect(new URL("/coming-soon", request.url))
   }
 
-  // If accessing admin signin with bypass parameter, set a cookie for future requests
-  if (pathname === "/admin/signin" && request.nextUrl.searchParams.has(ADMIN_BYPASS_TOKEN)) {
-    const response = NextResponse.next()
-    response.cookies.set(ADMIN_BYPASS_TOKEN, "true", {
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-      path: "/",
-    })
-    return response
-  }
-
-  // For all other cases, proceed normally
   return NextResponse.next()
 }
 
+// See "Matching Paths" below to learn more
 export const config = {
-  matcher: [
-    // Match all paths except for static files, api routes, etc.
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 }

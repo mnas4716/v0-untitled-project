@@ -14,48 +14,58 @@ import { Logo } from "@/components/logo"
 
 export default function AdminSignInPage() {
   const router = useRouter()
-  const [email, setEmail] = useState("moe@freedoc.com.au")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [mounted, setMounted] = useState(false)
+
+  // Handle client-side mounting to prevent hydration issues
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Check if already logged in
   useEffect(() => {
-    // Only run on client side
-    if (typeof window !== "undefined") {
+    if (!mounted) return
+
+    try {
       const adminUser = localStorage.getItem("adminUser")
       if (adminUser) {
         router.push("/admin/dashboard")
       }
+    } catch (error) {
+      console.error("Error checking authentication:", error)
     }
-  }, [router])
+  }, [router, mounted])
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!mounted) return
+
     setError("")
     setIsLoading(true)
 
     try {
       // For demo purposes, we're using a simple email/password check
-      // In a real application, you would verify against a server
       if (email === "moe@freedoc.com.au" && password === "admin123") {
         // Store admin user in localStorage
-        localStorage.setItem(
-          "adminUser",
-          JSON.stringify({
-            id: "admin-1",
-            email: "moe@freedoc.com.au",
-            firstName: "Moe",
-            lastName: "Nasr",
-            isAdmin: true,
-          }),
-        )
+        const adminData = {
+          id: "admin-1",
+          email: "moe@freedoc.com.au",
+          firstName: "Moe",
+          lastName: "Nasr",
+          role: "admin",
+          isAdmin: true,
+        }
 
-        // Also set isAdmin flag for compatibility
-        localStorage.setItem("isAdmin", "true")
+        localStorage.setItem("adminUser", JSON.stringify(adminData))
 
-        // Redirect to admin dashboard
-        router.push("/admin/dashboard")
+        // Add a small delay to ensure localStorage is updated
+        setTimeout(() => {
+          router.push("/admin/dashboard")
+        }, 100)
       } else {
         setError("Invalid email or password. Please try again.")
       }
@@ -65,6 +75,18 @@ export default function AdminSignInPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Don't render form until client-side hydration is complete
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-[#f4f9f8] flex items-center justify-center">
+        <div className="text-center">
+          <Logo className="h-10 w-10 text-[#00473e] mx-auto" />
+          <p className="mt-4 text-slate-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -133,13 +155,6 @@ export default function AdminSignInPage() {
                   </Button>
                 </div>
               </form>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-slate-600">
-                  Admin credentials: <span className="font-medium">moe@freedoc.com.au</span> /{" "}
-                  <span className="font-medium">admin123</span>
-                </p>
-              </div>
             </CardContent>
           </Card>
         </div>

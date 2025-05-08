@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -29,10 +29,11 @@ export default function AdminDashboardPage() {
   const [adminUser, setAdminUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState("active")
 
   // Load consultations from localStorage or fetch from server
   useEffect(() => {
-    const loadConsultations = async () => {
+    const loadConsultations = () => {
       setIsLoading(true)
       try {
         // Get admin user from localStorage
@@ -166,20 +167,24 @@ export default function AdminDashboardPage() {
     }
   }
 
-  // Filter consultations based on search term
-  const filteredActiveConsultations = activeConsultations.filter(
-    (c) =>
-      c.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.reason.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  // Filter consultations based on search term - memoized to prevent unnecessary recalculations
+  const filteredActiveConsultations = useMemo(() => {
+    return activeConsultations.filter(
+      (c) =>
+        c.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.reason.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
+  }, [activeConsultations, searchTerm])
 
-  const filteredCompletedConsultations = completedConsultations.filter(
-    (c) =>
-      c.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.reason.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const filteredCompletedConsultations = useMemo(() => {
+    return completedConsultations.filter(
+      (c) =>
+        c.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.reason.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
+  }, [completedConsultations, searchTerm])
 
   // Get consultation type badge
   const getConsultationTypeBadge = (type: string) => {
@@ -194,6 +199,11 @@ export default function AdminDashboardPage() {
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{type}</Badge>
     }
   }
+
+  // Calculate stats once
+  const totalConsultations = activeConsultations.length + completedConsultations.length
+  const completionRate =
+    totalConsultations > 0 ? Math.round((completedConsultations.length / totalConsultations) * 100) : 0
 
   return (
     <div className="space-y-6">
@@ -213,7 +223,7 @@ export default function AdminDashboardPage() {
             <Calendar className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeConsultations.length + completedConsultations.length}</div>
+            <div className="text-2xl font-bold">{totalConsultations}</div>
             <p className="text-xs text-slate-500">All time consultations</p>
           </CardContent>
         </Card>
@@ -243,15 +253,7 @@ export default function AdminDashboardPage() {
             <FileText className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {activeConsultations.length + completedConsultations.length > 0
-                ? Math.round(
-                    (completedConsultations.length / (activeConsultations.length + completedConsultations.length)) *
-                      100,
-                  )
-                : 0}
-              %
-            </div>
+            <div className="text-2xl font-bold">{completionRate}%</div>
             <p className="text-xs text-slate-500">Completion rate</p>
           </CardContent>
         </Card>
@@ -270,7 +272,7 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      <Tabs defaultValue="active" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="active">Active Consultations</TabsTrigger>
           <TabsTrigger value="completed">Completed Consultations</TabsTrigger>

@@ -2,60 +2,55 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowRight, Mail, KeyRound } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { requestOTP, signInWithOTP } from "@/app/actions"
+import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
+import { Logo } from "@/components/logo"
+import { setUserInStorage } from "@/lib/client-auth"
 
 export default function SignInPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
-  const [step, setStep] = useState<"email" | "otp">("email")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
-  const [generatedOTP, setGeneratedOTP] = useState("")
-
-  // Check if already logged in
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const user = localStorage.getItem("user")
-      if (user) {
-        router.push("/dashboard")
-      }
-    }
-  }, [router])
+  const [step, setStep] = useState<"email" | "otp">("email")
+  const [error, setError] = useState<string | null>(null)
+  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null)
 
   const handleRequestOTP = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
+    setError(null)
     setIsLoading(true)
 
     try {
-      const result = await requestOTP(email)
+      const response = await fetch("/api/auth/request-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      })
 
-      if (result.success) {
-        setSuccess(`OTP sent to ${email}. Please check your email.`)
+      const data = await response.json()
+
+      if (data.success) {
         setStep("otp")
-
-        // For demo purposes, we'll store and display the OTP
-        if (result.otp) {
-          setGeneratedOTP(result.otp)
+        // For development, show the OTP
+        if (data.otp) {
+          setGeneratedOtp(data.otp)
         }
       } else {
-        setError(result.message || "Failed to send OTP. Please try again.")
+        setError(data.message || "Failed to send OTP. Please try again.")
       }
-    } catch (error) {
-      console.error("Error requesting OTP:", error)
-      setError("An unexpected error occurred. Please try again.")
+    } catch (err) {
+      setError("An error occurred. Please try again.")
+      console.error(err)
     } finally {
       setIsLoading(false)
     }
@@ -63,141 +58,151 @@ export default function SignInPage() {
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
+    setError(null)
     setIsLoading(true)
 
     try {
-      const result = await signInWithOTP(email, otp)
+      // For development, accept any 6-digit OTP
+      if (process.env.NODE_ENV !== "production" && /^\d{6}$/.test(otp)) {
+        // Create a mock user
+        const user = {
+          id: "user_" + Date.now(),
+          email,
+          firstName: email.split("@")[0],
+          lastName: "",
+        }
 
-      if (result.success && result.user) {
         // Store user in localStorage
-        localStorage.setItem("user", JSON.stringify(result.user))
+        setUserInStorage(user)
+
+        // Redirect to dashboard
+        router.push("/dashboard")
+        return
+      }
+
+      const response = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, otp }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Store user in localStorage
+        setUserInStorage(data.user)
 
         // Redirect to dashboard
         router.push("/dashboard")
       } else {
-        setError(result.message || "Invalid OTP. Please try again.")
+        setError(data.message || "Invalid OTP. Please try again.")
       }
-    } catch (error) {
-      console.error("Error verifying OTP:", error)
-      setError("An unexpected error occurred. Please try again.")
+    } catch (err) {
+      setError("An error occurred. Please try again.")
+      console.error(err)
     } finally {
       setIsLoading(false)
     }
   }
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Sign In</h1>
-          <p className="text-slate-500">Sign in to access your account</p>
-        </div>
+  // For development, auto-fill OTP if available
+  const handleAutoFillOtp = () => {
+    if (generatedOtp) {
+      setOtp(generatedOtp)
+    }
+  }
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{step === "email" ? "Enter your email" : "Enter OTP"}</CardTitle>
+  return (
+    <div className="flex min-h-screen flex-col">
+      <SiteHeader activePage="signin" />
+      <main className="flex-1 flex items-center justify-center bg-slate-50 py-12 px-4">
+        <Card className="w-full max-w-md shadow-lg border-0">
+          <CardHeader className="space-y-1 text-center">
+            <div className="flex justify-center mb-4">
+              <Logo className="h-12 w-12 text-blue-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
             <CardDescription>
               {step === "email"
-                ? "We'll send you a one-time password to your email"
+                ? "Enter your email to receive a one-time password"
                 : "Enter the 6-digit code sent to your email"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {success && (
-              <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
-                <AlertDescription>{success}</AlertDescription>
-              </Alert>
-            )}
+            {error && <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm">{error}</div>}
 
             {step === "email" ? (
-              <form onSubmit={handleRequestOTP}>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="you@example.com"
-                        className="pl-10"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Sending..." : "Send OTP"}
-                    {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
-                  </Button>
+              <form onSubmit={handleRequestOTP} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                  />
                 </div>
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                  {isLoading ? "Sending..." : "Send Code"}
+                </Button>
               </form>
             ) : (
-              <form onSubmit={handleVerifyOTP}>
-                <div className="space-y-4">
-                  <div className="space-y-2">
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
                     <Label htmlFor="otp">One-Time Password</Label>
-                    <div className="relative">
-                      <KeyRound className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="otp"
-                        type="text"
-                        placeholder="123456"
-                        className="pl-10"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        required
-                        maxLength={6}
-                      />
-                    </div>
+                    {generatedOtp && (
+                      <button
+                        type="button"
+                        onClick={handleAutoFillOtp}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Auto-fill (Dev Only)
+                      </button>
+                    )}
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Verifying..." : "Verify OTP"}
-                    {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
-                  </Button>
-                  <Button
+                  <Input
+                    id="otp"
+                    type="text"
+                    placeholder="6-digit code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    maxLength={6}
+                    required
+                    className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                  />
+                </div>
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                  {isLoading ? "Verifying..." : "Sign In"}
+                </Button>
+                <div className="text-center">
+                  <button
                     type="button"
-                    variant="ghost"
-                    className="w-full"
-                    onClick={() => {
-                      setStep("email")
-                      setOtp("")
-                      setSuccess("")
-                      setGeneratedOTP("")
-                    }}
+                    onClick={() => setStep("email")}
+                    className="text-sm text-blue-600 hover:underline"
                   >
-                    Back to email
-                  </Button>
+                    Back to Email
+                  </button>
                 </div>
               </form>
             )}
           </CardContent>
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-slate-500">
-              Don't have an account?{" "}
+          <CardFooter className="flex flex-col space-y-4">
+            <div className="text-center text-sm text-gray-500">
+              Don&apos;t have an account?{" "}
               <Link href="/auth/signup" className="text-blue-600 hover:underline">
                 Sign up
               </Link>
-            </p>
+            </div>
           </CardFooter>
         </Card>
-
-        {/* Debug information - remove in production */}
-        {step === "otp" && (
-          <div className="mt-8 p-4 bg-gray-100 rounded-lg text-sm">
-            <p className="font-semibold">For testing purposes:</p>
-            <p>Use OTP: {generatedOTP || "123456"}</p>
-          </div>
-        )}
-      </div>
+      </main>
+      <SiteFooter />
     </div>
   )
 }

@@ -3,11 +3,14 @@
 import { z } from "zod"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { sendConfirmationEmail } from "@/lib/email"
-import { v4 as uuidv4 } from "uuid"
-
-// For demo purposes, we'll use a fixed OTP
-const DEMO_OTP = "123456"
+import {
+  createUser,
+  getUserByEmail,
+  updateUser,
+  updateUserLoginTime,
+  createConsultRequest,
+  cancelConsultRequest,
+} from "@/lib/database-service"
 
 // Schema for sign-in form
 const signInSchema = z.object({
@@ -28,10 +31,11 @@ const adminSignInSchema = z.object({
 
 // Schema for consultation form
 const consultSchema = z.object({
-  name: z.string().min(2),
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
   email: z.string().email(),
   phone: z.string().min(8),
-  date: z.string(),
+  dob: z.string(),
   reason: z.string().min(10),
 })
 
@@ -65,15 +69,22 @@ const contactSchema = z.object({
   message: z.string().min(10),
 })
 
+// In-memory OTP storage
+const otpStore: { [key: string]: { otp: string; expires: Date } } = {}
+
+// Function to generate a random 6-digit OTP
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+// Optimize the OTP functions for better performance and reliability
+
 // Function to request OTP
 export async function requestOTP(email: string) {
-  // Validate form data
-  const validatedFields = signInSchema.safeParse({
-    email: email,
-  })
+  console.log("requestOTP called for:", email)
 
-  // Return early if form validation fails
-  if (!validatedFields.success) {
+  // Validate email
+  if (!email || !email.includes("@")) {
     return {
       success: false,
       message: "Invalid email address",
@@ -81,81 +92,118 @@ export async function requestOTP(email: string) {
   }
 
   try {
-    // In a real application, we would generate a random OTP and store it securely
-    // For demo purposes, we'll use a fixed OTP
-    const otp = DEMO_OTP
+    // Generate a random 6-digit OTP
+    const otp = generateOTP()
+    console.log(`Generated OTP for ${email}: ${otp}`)
+
+    // Store OTP with expiration (15 minutes)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+    otpStore[email] = { otp, expires: expiresAt }
+    console.log(`OTP stored for ${email}, expires at ${expiresAt.toISOString()}`)
 
     // Store the email in a cookie for the OTP verification step
-    cookies().set("userEmail", email)
+    cookies().set("userEmail", email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60, // 15 minutes
+      path: "/",
+    })
 
-    // Send OTP to user's email (in a real app)
-    // For demo, we'll just log it
-    console.log(`OTP for ${email}: ${otp}`)
-
-    // Send email with OTP
-    // await sendConfirmationEmail({
-    //   to: email,
-    //   type: "otp",
-    //   data: {
-    //     otp,
-    //     email,
-    //   },
-    // })
-
-    return { success: true, otp: DEMO_OTP }
+    // For development, always return the OTP for easier testing
+    return {
+      success: true,
+      message: "OTP sent successfully",
+      otp: otp, // Always include OTP for easier testing
+    }
   } catch (error) {
+    console.error("Error in requestOTP:", error)
     return {
       success: false,
       message: "Failed to send OTP. Please try again.",
+      error: error instanceof Error ? error.message : String(error),
     }
   }
 }
 
 // Function to verify OTP and sign in
-export async function signInWithOTP(email: string, otp: string) {
-  // Get email from cookie
-  // const email = cookies().get("userEmail")?.value
+export async function verifyOTP(email: string, otp: string) {
+  console.log("verifyOTP called for:", email, "with OTP:", otp)
 
-  if (!email) {
+  // Validate inputs
+  if (!email || !email.includes("@")) {
     return {
       success: false,
-      message: "Email not found. Please try again.",
+      message: "Invalid email address",
     }
   }
 
-  // Validate form data
-  const validatedFields = otpSchema.safeParse({
-    email: email,
-    otp: otp,
-  })
-
-  // Return early if form validation fails
-  if (!validatedFields.success) {
+  if (!otp || otp.length !== 6 || !/^\d+$/.test(otp)) {
     return {
       success: false,
-      message: "Invalid OTP",
+      message: "Invalid OTP format",
     }
   }
 
   try {
-    // In a real application, we would verify the OTP against what was stored
-    // For demo purposes, we'll check against our fixed OTP
-    if (otp !== DEMO_OTP) {
+    // Get stored OTP
+    const storedOTPData = otpStore[email]
+    console.log("Retrieved OTP data:", storedOTPData)
+
+    // For development, accept any 6-digit OTP for easier testing
+    const isValidOTP =
+      process.env.NODE_ENV !== "production"
+        ? /^\d{6}$/.test(otp)
+        : storedOTPData && storedOTPData.otp === otp && new Date() <= storedOTPData.expires
+
+    if (isValidOTP) {
+      // OTP is valid, clean up
+      if (storedOTPData) {
+        delete otpStore[email]
+      }
+      cookies().delete("userEmail")
+
+      // Check if user exists, if not create a new user
+      let user = getUserByEmail(email)
+
+      if (!user) {
+        // Create new user with basic info
+        user = createUser({
+          email,
+          firstName: email.split("@")[0], // Simple name extraction from email
+          lastName: "",
+        })
+
+        if (!user) {
+          return {
+            success: false,
+            message: "Failed to create user account.",
+          }
+        }
+      } else {
+        // Update last login time
+        updateUserLoginTime(user.id)
+      }
+
+      console.log("User authenticated successfully:", user)
+      return {
+        success: true,
+        user: user,
+      }
+    } else {
+      // Invalid OTP
       return {
         success: false,
-        message: "Invalid OTP",
+        message: storedOTPData
+          ? "Invalid OTP. Please try again."
+          : "OTP expired or not found. Please request a new one.",
       }
     }
-
-    // Clear the email cookie
-    cookies().delete("userEmail")
-
-    // Redirect to success page
-    return { success: true, user: { email } }
   } catch (error) {
+    console.error("Error in verifyOTP:", error)
     return {
       success: false,
       message: "Failed to verify OTP. Please try again.",
+      error: error instanceof Error ? error.message : String(error),
     }
   }
 }
@@ -196,66 +244,88 @@ export async function adminSignIn(formData: FormData) {
 
 // Function to handle consultation form submission
 export async function submitConsultation(formData: FormData) {
-  // Validate form data
-  const validatedFields = consultSchema.safeParse({
-    name: formData.get("name"),
-    email: formData.get("email"),
-    phone: formData.get("phone"),
-    date: formData.get("date"),
-    reason: formData.get("reason"),
-  })
-
-  // Return early if form validation fails
-  if (!validatedFields.success) {
-    return {
-      error: "Invalid form data",
-    }
-  }
-
-  const { name, email, phone, date, reason } = validatedFields.data
-
   try {
-    // Create a consultation object
-    const consultation = {
-      id: uuidv4(),
-      name,
+    // Extract data from FormData
+    const firstName = formData.get("firstName") as string
+    const lastName = formData.get("lastName") as string
+    const email = formData.get("email") as string
+    const phone = formData.get("phone") as string
+    const dob = formData.get("dob") as string
+    const reason = formData.get("reason") as string
+    const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
+
+    // Basic validation
+    if (!firstName || !lastName || !email || !phone || !dob || !reason) {
+      return { success: false, message: "Missing required fields" }
+    }
+
+    // Check if user exists, if not create a new user
+    let user = getUserByEmail(email)
+
+    if (!user) {
+      // Create new user with provided info
+      user = createUser({
+        email,
+        firstName,
+        lastName,
+        phone,
+        dob,
+      })
+
+      if (!user) {
+        return {
+          success: false,
+          message: "Failed to create user account.",
+        }
+      }
+    } else {
+      // Update user information if it exists
+      updateUser(user.id, {
+        firstName,
+        lastName,
+        phone,
+        dob,
+      })
+    }
+
+    // Get current date and time for the appointment
+    const today = new Date()
+    const date = today.toISOString().split("T")[0]
+    const time = `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`
+
+    // Create consultation request
+    const consultRequest = createConsultRequest({
+      userId: user.id,
+      type: "consultation",
+      status: "pending",
+      reason,
+      date,
+      time,
+      patientName: `${firstName} ${lastName}`,
       email,
       phone,
-      date,
-      reason,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    }
-
-    // Send confirmation email to user
-    await sendConfirmationEmail({
-      type: "consult",
-      name,
-      email,
       details: {
-        date,
-      },
-    })
-
-    // Send notification email to admin
-    await sendConfirmationEmail({
-      to: "moe@freedoc.com.au",
-      type: "admin-notification",
-      data: {
-        type: "Consultation",
-        name,
+        firstName,
+        lastName,
         email,
         phone,
-        date,
-        reason,
+        dob,
+        files: fileCount > 0 ? true : false,
       },
     })
 
-    // Redirect to confirmation page
-    redirect("/consult/confirmation")
-  } catch (error) {
+    // Return success with redirect URL instead of directly redirecting
     return {
-      error: "Failed to submit consultation request. Please try again.",
+      success: true,
+      redirectUrl: "/consult/confirmation",
+      message: "Consultation request submitted successfully",
+    }
+  } catch (error) {
+    console.error("Error submitting consultation request:", error)
+    return {
+      success: false,
+      message: "Failed to submit consultation request. Please try again.",
+      error: error instanceof Error ? error.message : String(error),
     }
   }
 }
@@ -272,37 +342,83 @@ export async function requestMedicalCertificate(formData: FormData) {
     const reason = formData.get("reason") as string
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
-    const fileCount = Number.parseInt(formData.get("fileCount") as string)
+    const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
 
-    // Basic validation (you might want to use zod here as well)
+    // Basic validation
     if (!firstName || !lastName || !email || !phone || !dob || !reason || !startDate || !endDate) {
       return { success: false, message: "Missing required fields" }
     }
 
-    // Log the data (for debugging purposes)
-    console.log("Form Data:", {
-      firstName,
-      lastName,
-      email,
-      phone,
-      dob,
-      reason,
-      startDate,
-      endDate,
-      fileCount,
-    })
+    // Check if user exists, if not create a new user
+    let user = getUserByEmail(email)
 
-    // Handle file uploads (if any)
-    for (let i = 0; i < fileCount; i++) {
-      const file = formData.get(`file-${i}`) as File
-      console.log(`File ${i + 1}:`, file.name, file.type, file.size)
+    if (!user) {
+      // Create new user with provided info
+      user = createUser({
+        email,
+        firstName,
+        lastName,
+        phone,
+        dob,
+      })
+
+      if (!user) {
+        return {
+          success: false,
+          message: "Failed to create user account.",
+        }
+      }
+    } else {
+      // Update user information if it exists
+      updateUser(user.id, {
+        firstName,
+        lastName,
+        phone,
+        dob,
+      })
     }
 
-    // Simulate success
-    return { success: true, message: "Medical certificate request submitted successfully" }
+    // Get current date and time for the appointment
+    const today = new Date()
+    const date = today.toISOString().split("T")[0]
+    const time = `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`
+
+    // Create medical certificate request
+    const consultRequest = createConsultRequest({
+      userId: user.id,
+      type: "medical-certificate",
+      status: "pending",
+      reason,
+      date,
+      time,
+      patientName: `${firstName} ${lastName}`,
+      email,
+      phone,
+      details: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        dob,
+        startDate,
+        endDate,
+        files: fileCount > 0 ? true : false,
+      },
+    })
+
+    // Return success with redirect URL instead of directly redirecting
+    return {
+      success: true,
+      redirectUrl: "/medical-certificate/confirmation",
+      message: "Medical certificate request submitted successfully",
+    }
   } catch (error) {
     console.error("Error submitting medical certificate request:", error)
-    return { success: false, message: "Failed to submit medical certificate request" }
+    return {
+      success: false,
+      message: "Failed to submit medical certificate request",
+      error: error instanceof Error ? error.message : String(error),
+    }
   }
 }
 
@@ -317,53 +433,166 @@ export async function requestPrescription(formData: FormData) {
     const dob = formData.get("dob") as string
     const medication = formData.get("medication") as string
     const deliveryOption = formData.get("deliveryOption") as string
-    const fileCount = Number.parseInt(formData.get("fileCount") as string)
+    const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
 
-    // Basic validation (you might want to use zod here as well)
+    // Basic validation
     if (!firstName || !lastName || !email || !phone || !dob || !medication || !deliveryOption) {
       return { success: false, message: "Missing required fields" }
     }
 
-    // Log the data (for debugging purposes)
-    console.log("Form Data:", {
-      firstName,
-      lastName,
-      email,
-      phone,
-      dob,
-      medication,
-      deliveryOption,
-      fileCount,
-    })
+    // Check if user exists, if not create a new user
+    let user = getUserByEmail(email)
 
-    // Handle file uploads (if any)
-    for (let i = 0; i < fileCount; i++) {
-      const file = formData.get(`file-${i}`) as File
-      console.log(`File ${i + 1}:`, file.name, file.type, file.size)
+    if (!user) {
+      // Create new user with provided info
+      user = createUser({
+        email,
+        firstName,
+        lastName,
+        phone,
+        dob,
+      })
+
+      if (!user) {
+        return {
+          success: false,
+          message: "Failed to create user account.",
+        }
+      }
+    } else {
+      // Update user information if it exists
+      updateUser(user.id, {
+        firstName,
+        lastName,
+        phone,
+        dob,
+      })
     }
 
-    // Simulate success
-    return { success: true, message: "Prescription request submitted successfully" }
+    // Get current date and time for the appointment
+    const today = new Date()
+    const date = today.toISOString().split("T")[0]
+    const time = `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`
+
+    // Create prescription request
+    const consultRequest = createConsultRequest({
+      userId: user.id,
+      type: "prescription",
+      status: "pending",
+      reason: `Prescription request: ${medication}`,
+      date,
+      time,
+      patientName: `${firstName} ${lastName}`,
+      email,
+      phone,
+      details: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        dob,
+        medication,
+        deliveryOption,
+        files: fileCount > 0 ? true : false,
+      },
+    })
+
+    // Return success with redirect URL instead of directly redirecting
+    return {
+      success: true,
+      redirectUrl: "/prescription/confirmation",
+      message: "Prescription request submitted successfully",
+    }
   } catch (error) {
     console.error("Error submitting prescription request:", error)
-    return { success: false, message: "Failed to submit prescription request" }
+    return {
+      success: false,
+      message: "Failed to submit prescription request",
+      error: error instanceof Error ? error.message : String(error),
+    }
   }
 }
 
 export async function signUp(firstName: string, lastName: string, email: string, passwordPlain: string) {
   console.log("Signing up", firstName, lastName, email, passwordPlain)
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true })
-    }, 1000)
-  })
+
+  try {
+    // Check if user already exists
+    const existingUser = getUserByEmail(email)
+    if (existingUser) {
+      return {
+        success: false,
+        message: "Email already registered",
+      }
+    }
+
+    // Create new user
+    const user = createUser({
+      email,
+      firstName,
+      lastName,
+    })
+
+    if (!user) {
+      return {
+        success: false,
+        message: "Failed to create user account",
+      }
+    }
+
+    return { success: true, user }
+  } catch (error) {
+    console.error("Error signing up:", error)
+    return {
+      success: false,
+      message: "An error occurred during sign up",
+    }
+  }
 }
 
 export async function updateUserProfile(id: string, userData: any) {
   console.log("Updating user profile", id, userData)
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, user: { id, ...userData } })
-    }, 1000)
-  })
+
+  try {
+    const updatedUser = updateUser(id, userData)
+
+    if (!updatedUser) {
+      return {
+        success: false,
+        message: "Failed to update user profile",
+      }
+    }
+
+    return { success: true, user: updatedUser }
+  } catch (error) {
+    console.error("Error updating profile:", error)
+    return {
+      success: false,
+      message: "An error occurred while updating profile",
+    }
+  }
+}
+
+export async function cancelConsultation(id: string, reason?: string) {
+  try {
+    const result = cancelConsultRequest(id, reason)
+
+    if (!result) {
+      return {
+        success: false,
+        message: "Failed to cancel consultation",
+      }
+    }
+
+    return {
+      success: true,
+      message: "Consultation cancelled successfully",
+    }
+  } catch (error) {
+    console.error("Error cancelling consultation:", error)
+    return {
+      success: false,
+      message: "An error occurred while cancelling the consultation",
+    }
+  }
 }

@@ -21,14 +21,24 @@ export interface AdminUser {
   role: "admin"
 }
 
+// Cache for user data to reduce localStorage reads
+let userCache: User | null = null
+let adminCache: AdminUser | null = null
+
 // User authentication
 export function getUserFromStorage(): User | null {
   if (typeof window === "undefined") return null
 
+  // Return from cache if available
+  if (userCache) return userCache
+
   try {
     const userStr = localStorage.getItem("user")
     if (!userStr) return null
-    return JSON.parse(userStr)
+
+    // Parse and cache the user data
+    userCache = JSON.parse(userStr)
+    return userCache
   } catch (error) {
     console.error("Error parsing user from storage:", error)
     return null
@@ -39,6 +49,8 @@ export function setUserInStorage(user: User): void {
   if (typeof window === "undefined") return
 
   try {
+    // Update cache
+    userCache = user
     localStorage.setItem("user", JSON.stringify(user))
   } catch (error) {
     console.error("Error setting user in storage:", error)
@@ -47,6 +59,9 @@ export function setUserInStorage(user: User): void {
 
 export function removeUserFromStorage(): void {
   if (typeof window === "undefined") return
+
+  // Clear cache
+  userCache = null
   localStorage.removeItem("user")
 }
 
@@ -54,10 +69,16 @@ export function removeUserFromStorage(): void {
 export function getAdminFromStorage(): AdminUser | null {
   if (typeof window === "undefined") return null
 
+  // Return from cache if available
+  if (adminCache) return adminCache
+
   try {
     const adminStr = localStorage.getItem("adminUser")
     if (!adminStr) return null
-    return JSON.parse(adminStr)
+
+    // Parse and cache the admin data
+    adminCache = JSON.parse(adminStr)
+    return adminCache
   } catch (error) {
     console.error("Error parsing admin from storage:", error)
     return null
@@ -68,6 +89,8 @@ export function setAdminInStorage(admin: AdminUser): void {
   if (typeof window === "undefined") return
 
   try {
+    // Update cache
+    adminCache = admin
     localStorage.setItem("adminUser", JSON.stringify(admin))
   } catch (error) {
     console.error("Error setting admin in storage:", error)
@@ -76,6 +99,9 @@ export function setAdminInStorage(admin: AdminUser): void {
 
 export function removeAdminFromStorage(): void {
   if (typeof window === "undefined") return
+
+  // Clear cache
+  adminCache = null
   localStorage.removeItem("adminUser")
 }
 
@@ -139,6 +165,13 @@ export function requestOTP(email: string): string {
 // Function to sign out a user
 export function signOut(userType: "user" | "admin" = "user"): void {
   localStorage.removeItem(userType)
+
+  // Clear cache
+  if (userType === "user") {
+    userCache = null
+  } else {
+    adminCache = null
+  }
 }
 
 // Function to get the current user
@@ -147,15 +180,21 @@ export function getCurrentUser() {
     return null
   }
 
+  // Check cache first
+  if (userCache) return userCache
+  if (adminCache) return adminCache
+
   const user = localStorage.getItem("user")
   const admin = localStorage.getItem("admin")
 
   if (user) {
-    return JSON.parse(user)
+    userCache = JSON.parse(user)
+    return userCache
   }
 
   if (admin) {
-    return JSON.parse(admin)
+    adminCache = JSON.parse(admin)
+    return adminCache
   }
 
   return null
@@ -167,6 +206,9 @@ export function isAuthenticated(): boolean {
     return false
   }
 
+  // Check cache first for better performance
+  if (userCache || adminCache) return true
+
   return localStorage.getItem("user") !== null || localStorage.getItem("admin") !== null
 }
 
@@ -175,6 +217,9 @@ export function isAdmin(): boolean {
   if (typeof window === "undefined") {
     return false
   }
+
+  // Check cache first
+  if (adminCache) return true
 
   const admin = localStorage.getItem("admin")
   return admin !== null

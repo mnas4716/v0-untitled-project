@@ -1,379 +1,235 @@
-"use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, CheckCircle, ArrowRight, FileText, Upload } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { requestPrescription } from "../actions"
+import { CheckCircle, ArrowRight, Pill, Clock, Truck } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
 export default function PrescriptionPage() {
-  const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [step, setStep] = useState(1)
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    dob: "",
-    medication: "",
-    deliveryOption: "pharmacy",
-  })
-  const [files, setFiles] = useState<FileList | null>(null)
-  const [fileError, setFileError] = useState("")
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleRadioChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, deliveryOption: value }))
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files
-
-    if (selectedFiles && selectedFiles.length > 0) {
-      // Check file size (limit to 5MB per file)
-      const tooLarge = Array.from(selectedFiles).some((file) => file.size > 5 * 1024 * 1024)
-
-      if (tooLarge) {
-        setFileError("Files must be less than 5MB each")
-        e.target.value = ""
-        setFiles(null)
-        return
-      }
-
-      setFiles(selectedFiles)
-      setFileError("")
-    } else {
-      setFiles(null)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      const formDataObj = new FormData()
-      Object.entries(formData).forEach(([key, value]) => {
-        formDataObj.append(key, value)
-      })
-
-      // Add files if any
-      if (files) {
-        Array.from(files).forEach((file, index) => {
-          formDataObj.append(`file-${index}`, file)
-        })
-        formDataObj.append("fileCount", files.length.toString())
-      } else {
-        formDataObj.append("fileCount", "0")
-      }
-
-      await requestPrescription(formDataObj)
-      router.push("/prescription/confirmation")
-    } catch (error) {
-      console.error("Submission failed:", error)
-      setIsSubmitting(false)
-    }
-  }
-
-  const nextStep = () => setStep(step + 1)
-  const prevStep = () => setStep(step - 1)
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <SiteHeader />
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <SiteHeader activePage="prescription" />
 
-      <div className="container mx-auto px-4 py-8">
-        <Link href="/" className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to home
-        </Link>
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div className="container mx-auto px-4 py-16 md:py-20 flex flex-col md:flex-row items-center">
+          <div className="md:w-1/2 mb-10 md:mb-0">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Online Prescription Service</h2>
+            <p className="text-lg mb-6">
+              Get your prescriptions quickly and conveniently from the comfort of your home. Our qualified doctors can
+              prescribe a wide range of medications for various conditions.
+            </p>
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Convenient online consultations</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Legally valid prescriptions</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Multiple delivery options</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Secure and confidential service</span>
+              </li>
+            </ul>
+            <Link href="/prescription/request">
+              <Button
+                size="lg"
+                className="bg-white hover:bg-blue-50 text-blue-600 transition-all transform hover:-translate-y-1"
+              >
+                Request Prescription
+              </Button>
+            </Link>
+          </div>
 
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Request a Prescription</h1>
-          <p className="text-slate-600 mb-8">Fill in the details below to request a prescription</p>
+          <div className="md:w-1/2 flex justify-center">
+            <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
+              <Image
+                src="/placeholder.svg?key=ch4yg"
+                alt="Prescription Service"
+                width={400}
+                height={400}
+                className="rounded-md w-full h-auto"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <div className="mb-8">
-            <div className="relative flex items-center justify-between">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex flex-col items-center z-10">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
-                      step >= i ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"
-                    }`}
-                  >
-                    {step > i ? <CheckCircle className="h-5 w-5" /> : i}
-                  </div>
-                  <span className="text-sm text-slate-600">
-                    {i === 1 ? "Details" : i === 2 ? "Medication" : i === 3 ? "Delivery" : "Documents"}
-                  </span>
-                </div>
-              ))}
-              <div className="absolute h-1 bg-slate-200 left-0 right-0 top-5 -z-10"></div>
-              <div
-                className="absolute h-1 bg-blue-600 left-0 top-5 -z-10 transition-all duration-300"
-                style={{ width: `${(step - 1) * 33.33}%` }}
-              ></div>
+      {/* Services Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">Prescription Services</h2>
+          <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
+            Our doctors can prescribe medications for a variety of conditions through secure online consultations.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Pill className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">New Prescriptions</h3>
+              <p className="text-slate-600 mb-6">
+                Get a new prescription for a condition after consultation with one of our qualified doctors.
+              </p>
+              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                Most Common
+              </span>
+            </div>
+
+            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Clock className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Repeat Prescriptions</h3>
+              <p className="text-slate-600 mb-6">
+                Easily renew your existing prescriptions without needing to visit a doctor in person.
+              </p>
+              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                Fast Service
+              </span>
+            </div>
+
+            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Truck className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Medication Delivery</h3>
+              <p className="text-slate-600 mb-6">
+                Have your prescribed medications delivered directly to your home or sent to your local pharmacy.
+              </p>
+              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                Convenient
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Common Conditions */}
+      <section className="py-16 bg-slate-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">Common Conditions We Prescribe For</h2>
+          <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
+            Our doctors can prescribe medications for a wide range of conditions.
+          </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Allergies</h3>
+              <p className="text-sm text-slate-600">Seasonal and chronic allergies</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Asthma</h3>
+              <p className="text-sm text-slate-600">Inhalers and preventative medications</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Blood Pressure</h3>
+              <p className="text-sm text-slate-600">Hypertension management</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Diabetes</h3>
+              <p className="text-sm text-slate-600">Type 2 diabetes medications</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Skin Conditions</h3>
+              <p className="text-sm text-slate-600">Eczema, acne, and rashes</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Pain Management</h3>
+              <p className="text-sm text-slate-600">Appropriate pain relief options</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Mental Health</h3>
+              <p className="text-sm text-slate-600">Depression and anxiety medications</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Infections</h3>
+              <p className="text-sm text-slate-600">Antibiotics for bacterial infections</p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            {step === 1 && (
-              <Card className="border-0 shadow-md rounded-2xl mb-6 overflow-hidden transform transition-all hover:shadow-lg">
-                <CardHeader className="bg-blue-50">
-                  <CardTitle>Your Details</CardTitle>
-                  <CardDescription>Please provide your personal information</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input
-                        id="firstName"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        placeholder="Enter your first name"
-                        required
-                        className="border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        placeholder="Enter your last name"
-                        required
-                        className="border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="Enter your email address"
-                      required
-                      className="border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="Enter your phone number"
-                      required
-                      className="border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dob">Date of Birth</Label>
-                    <Input
-                      id="dob"
-                      name="dob"
-                      type="date"
-                      value={formData.dob}
-                      onChange={handleChange}
-                      required
-                      className="border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter className="bg-slate-50">
-                  <Button
-                    type="button"
-                    onClick={nextStep}
-                    className="w-full bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1 flex items-center justify-center"
-                  >
-                    Continue <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            )}
-
-            {step === 2 && (
-              <Card className="border-0 shadow-md rounded-2xl mb-6 overflow-hidden transform transition-all hover:shadow-lg">
-                <CardHeader className="bg-blue-50">
-                  <CardTitle>Medication Details</CardTitle>
-                  <CardDescription>Please provide details about the medication you need</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <Textarea
-                    name="medication"
-                    value={formData.medication}
-                    onChange={handleChange}
-                    placeholder="Enter the name of the medication, dosage, and any other relevant details..."
-                    className="min-h-[150px] border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
-                    required
-                  />
-                </CardContent>
-                <CardFooter className="flex justify-between bg-slate-50">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={nextStep}
-                    className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1 flex items-center"
-                  >
-                    Continue <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            )}
-
-            {step === 3 && (
-              <Card className="border-0 shadow-md rounded-2xl mb-6 overflow-hidden transform transition-all hover:shadow-lg">
-                <CardHeader className="bg-blue-50">
-                  <CardTitle>Delivery Option</CardTitle>
-                  <CardDescription>Please select how you would like to receive your prescription</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <RadioGroup value={formData.deliveryOption} onValueChange={handleRadioChange} className="space-y-4">
-                    <div className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-slate-50">
-                      <RadioGroupItem value="pharmacy" id="pharmacy" />
-                      <Label htmlFor="pharmacy" className="flex-1 cursor-pointer">
-                        Send to my local pharmacy
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-slate-50">
-                      <RadioGroupItem value="email" id="email" />
-                      <Label htmlFor="email" className="flex-1 cursor-pointer">
-                        Email me the prescription
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-slate-50">
-                      <RadioGroupItem value="delivery" id="delivery" />
-                      <Label htmlFor="delivery" className="flex-1 cursor-pointer">
-                        Home delivery (additional fees may apply)
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </CardContent>
-                <CardFooter className="flex justify-between bg-slate-50">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={nextStep}
-                    className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1 flex items-center"
-                  >
-                    Continue <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            )}
-
-            {step === 4 && (
-              <Card className="border-0 shadow-md rounded-2xl overflow-hidden transform transition-all hover:shadow-lg">
-                <CardHeader className="bg-blue-50">
-                  <CardTitle>Upload Documents</CardTitle>
-                  <CardDescription>Attach any relevant medical documents or photos (optional)</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
-                      <Upload className="h-8 w-8 mx-auto mb-2 text-slate-400" />
-                      <p className="text-sm text-slate-600 mb-2">Drag and drop files here, or click to select files</p>
-                      <p className="text-xs text-slate-500 mb-4">
-                        Supported formats: JPG, PNG, PDF, DOC, DOCX (Max 5MB per file)
-                      </p>
-                      <Input
-                        id="file-upload"
-                        type="file"
-                        multiple
-                        onChange={handleFileChange}
-                        className="hidden"
-                        accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById("file-upload")?.click()}
-                        className="bg-white border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
-                      >
-                        Select Files
-                      </Button>
-                    </div>
-
-                    {fileError && <p className="text-sm text-red-500">{fileError}</p>}
-
-                    {files && files.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-slate-700">Selected Files:</p>
-                        <ul className="space-y-1">
-                          {Array.from(files).map((file, index) => (
-                            <li key={index} className="text-sm text-slate-600 flex items-center">
-                              <FileText className="h-4 w-4 mr-2 text-blue-500" />
-                              {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between bg-slate-50">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1 flex items-center"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit Request"}{" "}
-                    {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
-                  </Button>
-                </CardFooter>
-              </Card>
-            )}
-          </form>
+          <div className="text-center mt-12">
+            <p className="text-slate-600 mb-4">
+              Not sure if we can prescribe for your condition? Contact us or start a consultation to find out.
+            </p>
+            <Link href="/prescription/request">
+              <Button className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1">
+                Request Prescription <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-slate-800 mb-12">How It Works</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center bg-slate-50 p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
+              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-blue-600">1</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Request a Prescription</h3>
+              <p className="text-slate-600">
+                Fill out our simple online form with your details and the medication you need.
+              </p>
+            </div>
+
+            <div className="text-center bg-slate-50 p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
+              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-blue-600">2</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Doctor Review</h3>
+              <p className="text-slate-600">
+                One of our qualified doctors will review your request and may contact you for additional information if
+                needed.
+              </p>
+            </div>
+
+            <div className="text-center bg-slate-50 p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
+              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-blue-600">3</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Receive Your Prescription</h3>
+              <p className="text-slate-600">
+                If approved, your prescription will be sent to your chosen pharmacy or delivered directly to your home.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-slate-100">
+        <div className="container mx-auto px-4">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 md:p-12 shadow-lg">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-3xl font-bold text-white mb-4">Need a prescription?</h2>
+              <p className="text-blue-100 mb-8">
+                Our doctors can provide you with a valid prescription quickly and conveniently. Start your request
+                today.
+              </p>
+              <Link href="/prescription/request">
+                <Button
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-blue-50 transition-all transform hover:-translate-y-1"
+                >
+                  Request Prescription
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <SiteFooter />
     </div>
