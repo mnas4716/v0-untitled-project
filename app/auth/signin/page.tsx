@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,105 +13,71 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Logo } from "@/components/logo"
-import { setUserInStorage } from "@/lib/client-auth"
 
 export default function SignInPage() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [otp, setOtp] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [step, setStep] = useState<"email" | "otp">("email")
-  const [error, setError] = useState<string | null>(null)
-  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
 
-  const handleRequestOTP = async (e: React.FormEvent) => {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/auth/request-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
       })
 
-      const data = await response.json()
-
-      if (data.success) {
-        setStep("otp")
-        // For development, show the OTP
-        if (data.otp) {
-          setGeneratedOtp(data.otp)
-        }
-      } else {
-        setError(data.message || "Failed to send OTP. Please try again.")
-      }
-    } catch (err) {
-      setError("An error occurred. Please try again.")
-      console.error(err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setIsLoading(true)
-
-    try {
-      // For development, accept any 6-digit OTP
-      if (process.env.NODE_ENV !== "production" && /^\d{6}$/.test(otp)) {
-        // Create a mock user
-        const user = {
-          id: "user_" + Date.now(),
-          email,
-          firstName: email.split("@")[0],
-          lastName: "",
-        }
-
-        // Store user in localStorage
-        setUserInStorage(user)
-
-        // Redirect to dashboard
-        router.push("/dashboard")
+      if (result?.error) {
+        setError("Invalid email or password")
+        setIsLoading(false)
         return
       }
 
-      const response = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, otp }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Store user in localStorage
-        setUserInStorage(data.user)
-
-        // Redirect to dashboard
-        router.push("/dashboard")
-      } else {
-        setError(data.message || "Invalid OTP. Please try again.")
-      }
+      router.push(callbackUrl)
     } catch (err) {
       setError("An error occurred. Please try again.")
       console.error(err)
-    } finally {
       setIsLoading(false)
     }
   }
 
-  // For development, auto-fill OTP if available
-  const handleAutoFillOtp = () => {
-    if (generatedOtp) {
-      setOtp(generatedOtp)
+  const handleDemoSignIn = async (demoEmail: string) => {
+    setIsLoading(true)
+
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: demoEmail,
+        password: "demo",
+      })
+
+      if (result?.error) {
+        setError("Demo login failed")
+        setIsLoading(false)
+        return
+      }
+
+      // Redirect based on role
+      if (demoEmail === "admin@example.com") {
+        router.push("/admin/dashboard")
+      } else if (demoEmail === "doctor@example.com") {
+        router.push("/doctor/dashboard")
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (err) {
+      setError("An error occurred. Please try again.")
+      console.error(err)
+      setIsLoading(false)
     }
   }
 
@@ -124,73 +91,40 @@ export default function SignInPage() {
               <Logo className="h-12 w-12 text-blue-600" />
             </div>
             <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
-            <CardDescription>
-              {step === "email"
-                ? "Enter your email to receive a one-time password"
-                : "Enter the 6-digit code sent to your email"}
-            </CardDescription>
+            <CardDescription>Enter your email to sign in to your account</CardDescription>
           </CardHeader>
           <CardContent>
             {error && <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm">{error}</div>}
 
-            {step === "email" ? (
-              <form onSubmit={handleRequestOTP} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                  />
-                </div>
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send Code"}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyOTP} className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="otp">One-Time Password</Label>
-                    {generatedOtp && (
-                      <button
-                        type="button"
-                        onClick={handleAutoFillOtp}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        Auto-fill (Dev Only)
-                      </button>
-                    )}
-                  </div>
-                  <Input
-                    id="otp"
-                    type="text"
-                    placeholder="6-digit code"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    maxLength={6}
-                    required
-                    className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                  />
-                </div>
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-                  {isLoading ? "Verifying..." : "Sign In"}
-                </Button>
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setStep("email")}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    Back to Email
-                  </button>
-                </div>
-              </form>
-            )}
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                />
+                <p className="text-xs text-gray-500">For demo purposes, you can leave the password blank</p>
+              </div>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-center text-sm text-gray-500">
@@ -198,6 +132,37 @@ export default function SignInPage() {
               <Link href="/auth/signup" className="text-blue-600 hover:underline">
                 Sign up
               </Link>
+            </div>
+
+            {/* Demo shortcuts */}
+            <div className="border-t pt-4 mt-2">
+              <p className="text-center text-sm text-gray-500 mb-2">Demo Shortcuts:</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDemoSignIn("user@example.com")}
+                  disabled={isLoading}
+                >
+                  User Dashboard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDemoSignIn("doctor@example.com")}
+                  disabled={isLoading}
+                >
+                  Doctor Dashboard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDemoSignIn("admin@example.com")}
+                  disabled={isLoading}
+                >
+                  Admin Dashboard
+                </Button>
+              </div>
             </div>
           </CardFooter>
         </Card>
