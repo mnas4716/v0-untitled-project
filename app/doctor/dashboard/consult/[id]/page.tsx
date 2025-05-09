@@ -8,10 +8,21 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getConsultRequestById, updateConsultRequest, markConsultRequestAsCompleted } from "@/lib/database-service"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Phone, FileText, Stethoscope, ClipboardList, Save, CheckCircle } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
 
 export default function ConsultDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -23,6 +34,26 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
   const [isSaving, setIsSaving] = useState(false)
   const [isCompleting, setIsCompleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // States for dialogs
+  const [referralDetails, setReferralDetails] = useState({
+    specialist: "",
+    reason: "",
+    urgency: "Normal",
+  })
+  const [prescriptionDetails, setPrescrptionDetails] = useState({
+    medication: "",
+    dosage: "",
+    frequency: "",
+    duration: "",
+    instructions: "",
+  })
+  const [certificateDetails, setCertificateDetails] = useState({
+    startDate: "",
+    endDate: "",
+    reason: "",
+    restrictions: "",
+  })
 
   useEffect(() => {
     // Get doctor from localStorage
@@ -42,8 +73,13 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
         if (!consultationDetails) {
           setError("Consultation not found")
         } else {
-          setConsultation(consultationDetails)
-          setDoctorNotes(consultationDetails.doctorNotes || "")
+          // Check if this consultation is assigned to this doctor
+          if (consultationDetails.assignedDoctorId && consultationDetails.assignedDoctorId !== parsedDoctor.id) {
+            setError("This consultation is not assigned to you")
+          } else {
+            setConsultation(consultationDetails)
+            setDoctorNotes(consultationDetails.doctorNotes || "")
+          }
         }
       } catch (error) {
         console.error("Error loading consultation:", error)
@@ -126,6 +162,110 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
     }
   }
 
+  const handleCallPatient = () => {
+    // In a real app, this would initiate a call
+    // For demo purposes, we'll just show a toast
+    toast({
+      title: "Calling Patient",
+      description: `Initiating call to ${consultation.patientName} at ${consultation.phone}`,
+    })
+  }
+
+  const handleSendReferral = () => {
+    // In a real app, this would send a referral
+    // For demo purposes, we'll just show a toast and update the notes
+    const referralNote = `
+Referral sent to: ${referralDetails.specialist}
+Reason: ${referralDetails.reason}
+Urgency: ${referralDetails.urgency}
+Date: ${new Date().toLocaleDateString()}
+    `.trim()
+
+    const updatedNotes = doctorNotes
+      ? `${doctorNotes}\n\n--- REFERRAL ---\n${referralNote}`
+      : `--- REFERRAL ---\n${referralNote}`
+
+    setDoctorNotes(updatedNotes)
+
+    // Save the updated notes
+    updateConsultRequest(consultation.id, {
+      doctorNotes: updatedNotes,
+    }).then((updatedConsult) => {
+      if (updatedConsult) {
+        setConsultation(updatedConsult)
+        toast({
+          title: "Referral Sent",
+          description: `Referral to ${referralDetails.specialist} has been recorded`,
+        })
+      }
+    })
+  }
+
+  const handleIssuePrescription = () => {
+    // In a real app, this would issue a prescription
+    // For demo purposes, we'll just show a toast and update the notes
+    const prescriptionNote = `
+PRESCRIPTION
+Medication: ${prescriptionDetails.medication}
+Dosage: ${prescriptionDetails.dosage}
+Frequency: ${prescriptionDetails.frequency}
+Duration: ${prescriptionDetails.duration}
+Instructions: ${prescriptionDetails.instructions}
+Date: ${new Date().toLocaleDateString()}
+    `.trim()
+
+    const updatedNotes = doctorNotes
+      ? `${doctorNotes}\n\n--- PRESCRIPTION ---\n${prescriptionNote}`
+      : `--- PRESCRIPTION ---\n${prescriptionNote}`
+
+    setDoctorNotes(updatedNotes)
+
+    // Save the updated notes
+    updateConsultRequest(consultation.id, {
+      doctorNotes: updatedNotes,
+    }).then((updatedConsult) => {
+      if (updatedConsult) {
+        setConsultation(updatedConsult)
+        toast({
+          title: "Prescription Issued",
+          description: `Prescription for ${prescriptionDetails.medication} has been recorded`,
+        })
+      }
+    })
+  }
+
+  const handleIssueMedicalCertificate = () => {
+    // In a real app, this would issue a medical certificate
+    // For demo purposes, we'll just show a toast and update the notes
+    const certificateNote = `
+MEDICAL CERTIFICATE
+Start Date: ${certificateDetails.startDate}
+End Date: ${certificateDetails.endDate}
+Reason: ${certificateDetails.reason}
+Restrictions: ${certificateDetails.restrictions}
+Date Issued: ${new Date().toLocaleDateString()}
+    `.trim()
+
+    const updatedNotes = doctorNotes
+      ? `${doctorNotes}\n\n--- MEDICAL CERTIFICATE ---\n${certificateNote}`
+      : `--- MEDICAL CERTIFICATE ---\n${certificateNote}`
+
+    setDoctorNotes(updatedNotes)
+
+    // Save the updated notes
+    updateConsultRequest(consultation.id, {
+      doctorNotes: updatedNotes,
+    }).then((updatedConsult) => {
+      if (updatedConsult) {
+        setConsultation(updatedConsult)
+        toast({
+          title: "Medical Certificate Issued",
+          description: `Medical certificate from ${certificateDetails.startDate} to ${certificateDetails.endDate} has been recorded`,
+        })
+      }
+    })
+  }
+
   // Format date for display
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -192,6 +332,7 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
         <div className="flex items-center gap-2">
           {consultation.status === "pending" && (
             <Button onClick={handleCompleteConsultation} disabled={isCompleting}>
+              <CheckCircle className="mr-2 h-4 w-4" />
               {isCompleting ? "Completing..." : "Mark as Completed"}
             </Button>
           )}
@@ -235,6 +376,182 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
                 </div>
               )}
             </CardContent>
+            <CardFooter className="flex flex-col items-stretch gap-2">
+              <Button variant="outline" className="w-full justify-start" onClick={handleCallPatient}>
+                <Phone className="mr-2 h-4 w-4" />
+                Call Patient
+              </Button>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Send Referral
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Send Referral</DialogTitle>
+                    <DialogDescription>Create a referral for this patient to see a specialist.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="specialist">Specialist/Facility</Label>
+                      <Input
+                        id="specialist"
+                        value={referralDetails.specialist}
+                        onChange={(e) => setReferralDetails({ ...referralDetails, specialist: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="reason">Reason for Referral</Label>
+                      <Textarea
+                        id="reason"
+                        value={referralDetails.reason}
+                        onChange={(e) => setReferralDetails({ ...referralDetails, reason: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="urgency">Urgency</Label>
+                      <select
+                        id="urgency"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={referralDetails.urgency}
+                        onChange={(e) => setReferralDetails({ ...referralDetails, urgency: e.target.value })}
+                      >
+                        <option>Urgent</option>
+                        <option>High</option>
+                        <option>Normal</option>
+                        <option>Low</option>
+                      </select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleSendReferral}>Send Referral</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Stethoscope className="mr-2 h-4 w-4" />
+                    Issue Prescription
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Issue Prescription</DialogTitle>
+                    <DialogDescription>Create a prescription for this patient.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="medication">Medication</Label>
+                      <Input
+                        id="medication"
+                        value={prescriptionDetails.medication}
+                        onChange={(e) => setPrescrptionDetails({ ...prescriptionDetails, medication: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="dosage">Dosage</Label>
+                        <Input
+                          id="dosage"
+                          value={prescriptionDetails.dosage}
+                          onChange={(e) => setPrescrptionDetails({ ...prescriptionDetails, dosage: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="frequency">Frequency</Label>
+                        <Input
+                          id="frequency"
+                          value={prescriptionDetails.frequency}
+                          onChange={(e) => setPrescrptionDetails({ ...prescriptionDetails, frequency: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="duration">Duration</Label>
+                      <Input
+                        id="duration"
+                        value={prescriptionDetails.duration}
+                        onChange={(e) => setPrescrptionDetails({ ...prescriptionDetails, duration: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="instructions">Special Instructions</Label>
+                      <Textarea
+                        id="instructions"
+                        value={prescriptionDetails.instructions}
+                        onChange={(e) =>
+                          setPrescrptionDetails({ ...prescriptionDetails, instructions: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleIssuePrescription}>Issue Prescription</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Issue Medical Certificate
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Issue Medical Certificate</DialogTitle>
+                    <DialogDescription>Create a medical certificate for this patient.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="startDate">Start Date</Label>
+                        <Input
+                          id="startDate"
+                          type="date"
+                          value={certificateDetails.startDate}
+                          onChange={(e) => setCertificateDetails({ ...certificateDetails, startDate: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="endDate">End Date</Label>
+                        <Input
+                          id="endDate"
+                          type="date"
+                          value={certificateDetails.endDate}
+                          onChange={(e) => setCertificateDetails({ ...certificateDetails, endDate: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="certReason">Reason</Label>
+                      <Input
+                        id="certReason"
+                        value={certificateDetails.reason}
+                        onChange={(e) => setCertificateDetails({ ...certificateDetails, reason: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="restrictions">Restrictions/Recommendations</Label>
+                      <Textarea
+                        id="restrictions"
+                        value={certificateDetails.restrictions}
+                        onChange={(e) => setCertificateDetails({ ...certificateDetails, restrictions: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleIssueMedicalCertificate}>Issue Certificate</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardFooter>
           </Card>
         </div>
 
@@ -242,40 +559,36 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
           <Card>
             <CardHeader>
               <CardTitle>Consultation Details</CardTitle>
-              <CardDescription>Information about the consultation request</CardDescription>
+              <CardDescription>Information and notes about the consultation</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="details" className="space-y-4">
-                <TabsList>
-                  <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="notes">Doctor Notes</TabsTrigger>
-                </TabsList>
+            <CardContent className="space-y-6">
+              {/* Consultation Details Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Reason for Consultation</h3>
+                <div className="bg-slate-50 p-4 rounded-md">
+                  <p className="text-slate-700 whitespace-pre-line">{consultation.reason}</p>
+                </div>
 
-                <TabsContent value="details" className="space-y-4">
+                {consultation.type === "medical-certificate" && consultation.details && (
                   <div>
-                    <h3 className="font-medium mb-2">Reason for Consultation</h3>
-                    <p className="text-slate-600 whitespace-pre-line">{consultation.reason}</p>
-                  </div>
-
-                  {consultation.type === "medical-certificate" && consultation.details && (
-                    <div>
-                      <h3 className="font-medium mb-2">Medical Certificate Details</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm font-medium">Start Date</p>
-                          <p>{consultation.details.startDate}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">End Date</p>
-                          <p>{consultation.details.endDate}</p>
-                        </div>
+                    <h3 className="text-lg font-medium">Medical Certificate Request</h3>
+                    <div className="bg-slate-50 p-4 rounded-md grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium">Start Date</p>
+                        <p>{consultation.details.startDate}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">End Date</p>
+                        <p>{consultation.details.endDate}</p>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {consultation.type === "prescription" && consultation.details && (
-                    <div>
-                      <h3 className="font-medium mb-2">Prescription Details</h3>
+                {consultation.type === "prescription" && consultation.details && (
+                  <div>
+                    <h3 className="text-lg font-medium">Prescription Request</h3>
+                    <div className="bg-slate-50 p-4 rounded-md">
                       <div>
                         <p className="text-sm font-medium">Medication</p>
                         <p>{consultation.details.medication}</p>
@@ -287,28 +600,45 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
                         </div>
                       )}
                     </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="notes" className="space-y-4">
-                  <div>
-                    <Label htmlFor="doctorNotes">Doctor Notes (only visible to healthcare staff)</Label>
-                    <Textarea
-                      id="doctorNotes"
-                      placeholder="Enter your notes about this consultation..."
-                      className="min-h-[200px] mt-2"
-                      value={doctorNotes}
-                      onChange={(e) => setDoctorNotes(e.target.value)}
-                      disabled={consultation.status !== "pending"}
-                    />
                   </div>
-                  {consultation.status === "pending" && (
-                    <Button onClick={handleSaveNotes} disabled={isSaving}>
-                      {isSaving ? "Saving..." : "Save Notes"}
-                    </Button>
-                  )}
-                </TabsContent>
-              </Tabs>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Doctor Notes Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Doctor Notes</h3>
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                  <p className="text-sm text-yellow-700">
+                    <strong>Note:</strong> These notes are for healthcare staff only and will never be visible to
+                    patients.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="Enter confidential notes about this patient or consultation..."
+                    className="min-h-[200px]"
+                    value={doctorNotes}
+                    onChange={(e) => setDoctorNotes(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveNotes} disabled={isSaving}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {isSaving ? "Saving..." : "Save Notes"}
+                  </Button>
+                </div>
+
+                {doctorNotes && (
+                  <div className="bg-white border border-slate-200 p-4 rounded-md">
+                    <h4 className="font-medium mb-2">Saved Notes</h4>
+                    <pre className="whitespace-pre-wrap text-sm">{doctorNotes}</pre>
+                  </div>
+                )}
+              </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button asChild variant="outline">
@@ -316,6 +646,7 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
               </Button>
               {consultation.status === "pending" && (
                 <Button onClick={handleCompleteConsultation} disabled={isCompleting}>
+                  <CheckCircle className="mr-2 h-4 w-4" />
                   {isCompleting ? "Completing..." : "Mark as Completed"}
                 </Button>
               )}

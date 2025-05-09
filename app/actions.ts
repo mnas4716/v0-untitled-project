@@ -10,6 +10,7 @@ import {
   updateUserLoginTime,
   createConsultRequest,
   cancelConsultRequest,
+  getAllDoctors,
 } from "@/lib/database-service"
 
 // Schema for sign-in form
@@ -75,6 +76,15 @@ const otpStore: { [key: string]: { otp: string; expires: Date } } = {}
 // Function to generate a random 6-digit OTP
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+// Helper function to get a random active doctor
+function getRandomActiveDoctor() {
+  const doctors = getAllDoctors().filter((doctor) => doctor.isActive)
+  if (doctors.length === 0) return null
+
+  const randomIndex = Math.floor(Math.random() * doctors.length)
+  return doctors[randomIndex]
 }
 
 // Optimize the OTP functions for better performance and reliability
@@ -294,6 +304,10 @@ export async function submitConsultation(formData: FormData) {
     const date = today.toISOString().split("T")[0]
     const time = `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`
 
+    // Get a random active doctor to assign the consultation to
+    const randomDoctor = getRandomActiveDoctor()
+    const assignedDoctorId = randomDoctor ? randomDoctor.id : undefined
+
     // Create consultation request
     const consultRequest = createConsultRequest({
       userId: user.id,
@@ -305,6 +319,7 @@ export async function submitConsultation(formData: FormData) {
       patientName: `${firstName} ${lastName}`,
       email,
       phone,
+      assignedDoctorId,
       details: {
         firstName,
         lastName,
@@ -384,6 +399,10 @@ export async function requestMedicalCertificate(formData: FormData) {
     const date = today.toISOString().split("T")[0]
     const time = `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`
 
+    // Get a random active doctor to assign the consultation to
+    const randomDoctor = getRandomActiveDoctor()
+    const assignedDoctorId = randomDoctor ? randomDoctor.id : undefined
+
     // Create medical certificate request
     const consultRequest = createConsultRequest({
       userId: user.id,
@@ -395,6 +414,7 @@ export async function requestMedicalCertificate(formData: FormData) {
       patientName: `${firstName} ${lastName}`,
       email,
       phone,
+      assignedDoctorId,
       details: {
         firstName,
         lastName,
@@ -475,6 +495,10 @@ export async function requestPrescription(formData: FormData) {
     const date = today.toISOString().split("T")[0]
     const time = `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`
 
+    // Get a random active doctor to assign the consultation to
+    const randomDoctor = getRandomActiveDoctor()
+    const assignedDoctorId = randomDoctor ? randomDoctor.id : undefined
+
     // Create prescription request
     const consultRequest = createConsultRequest({
       userId: user.id,
@@ -486,6 +510,7 @@ export async function requestPrescription(formData: FormData) {
       patientName: `${firstName} ${lastName}`,
       email,
       phone,
+      assignedDoctorId,
       details: {
         firstName,
         lastName,

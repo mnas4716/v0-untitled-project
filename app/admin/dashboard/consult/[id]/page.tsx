@@ -9,7 +9,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Save } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { getConsultRequestById, updateConsultRequest, cancelConsultRequest } from "@/lib/database-service"
+import {
+  getConsultRequestById,
+  updateConsultRequest,
+  cancelConsultRequest,
+  getDoctorById,
+} from "@/lib/database-service"
 
 interface Consultation {
   id: string
@@ -28,6 +33,7 @@ interface Consultation {
   notes?: string
   doctorNotes?: string
   details?: any
+  assignedDoctorId?: string
 }
 
 export default function AdminConsultPage() {
@@ -36,6 +42,7 @@ export default function AdminConsultPage() {
   const { id } = params
 
   const [consultation, setConsultation] = useState<Consultation | null>(null)
+  const [assignedDoctor, setAssignedDoctor] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [doctorNotes, setDoctorNotes] = useState("")
   const [isSaving, setIsSaving] = useState(false)
@@ -51,6 +58,14 @@ export default function AdminConsultPage() {
         if (consultRequest) {
           setConsultation(consultRequest)
           setDoctorNotes(consultRequest.doctorNotes || "")
+
+          // Load assigned doctor if any
+          if (consultRequest.assignedDoctorId) {
+            const doctor = getDoctorById(consultRequest.assignedDoctorId)
+            if (doctor) {
+              setAssignedDoctor(doctor)
+            }
+          }
         } else {
           router.push("/admin/dashboard")
         }
@@ -238,6 +253,14 @@ export default function AdminConsultPage() {
                   {consultation.status.charAt(0).toUpperCase() + consultation.status.slice(1)}
                 </span>
               </div>
+              {assignedDoctor && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Assigned Doctor:</span>
+                  <span>
+                    Dr. {assignedDoctor.firstName} {assignedDoctor.lastName}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="pt-4 space-y-2">
@@ -284,34 +307,46 @@ export default function AdminConsultPage() {
             <CardDescription>View and manage consultation information</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="doctor-notes">
+            <Tabs defaultValue="details">
               <TabsList className="mb-4">
-                <TabsTrigger value="doctor-notes">Doctor Notes</TabsTrigger>
+                <TabsTrigger value="details">Details & Notes</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="doctor-notes" className="space-y-4">
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                  <p className="text-sm text-yellow-700">
-                    <strong>Note:</strong> These notes are for internal use only and will never be visible to patients.
-                  </p>
-                </div>
+              <TabsContent value="details" className="space-y-6">
+                {/* Doctor Notes Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Doctor Notes</h3>
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                    <p className="text-sm text-yellow-700">
+                      <strong>Note:</strong> These notes are for internal use only and will never be visible to
+                      patients.
+                    </p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Textarea
-                    placeholder="Enter confidential notes about this patient or consultation..."
-                    className="min-h-[200px]"
-                    value={doctorNotes}
-                    onChange={(e) => setDoctorNotes(e.target.value)}
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Enter confidential notes about this patient or consultation..."
+                      className="min-h-[200px]"
+                      value={doctorNotes}
+                      onChange={(e) => setDoctorNotes(e.target.value)}
+                    />
+                  </div>
 
-                <div className="flex justify-end items-center gap-4">
-                  {saveSuccess && <p className="text-sm text-green-600">Notes saved successfully!</p>}
-                  <Button onClick={saveDoctorNotes} disabled={isSaving}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Saving..." : "Save Doctor Notes"}
-                  </Button>
+                  <div className="flex justify-end items-center gap-4">
+                    {saveSuccess && <p className="text-sm text-green-600">Notes saved successfully!</p>}
+                    <Button onClick={saveDoctorNotes} disabled={isSaving}>
+                      <Save className="mr-2 h-4 w-4" />
+                      {isSaving ? "Saving..." : "Save Doctor Notes"}
+                    </Button>
+                  </div>
+
+                  {doctorNotes && (
+                    <div className="bg-white border border-slate-200 p-4 rounded-md mt-4">
+                      <h4 className="font-medium mb-2">Saved Notes</h4>
+                      <pre className="whitespace-pre-wrap text-sm">{doctorNotes}</pre>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 

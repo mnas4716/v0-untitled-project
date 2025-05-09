@@ -282,7 +282,7 @@ export default function DoctorDashboardPage() {
                           {consultation.doctorNotes && (
                             <div className="mt-2 p-2 bg-blue-50 rounded-md">
                               <p className="text-sm font-medium text-blue-800">Your Notes:</p>
-                              <p className="text-sm text-blue-700">{consultation.doctorNotes}</p>
+                              <p className="text-sm text-blue-700">{consultation.doctorNotes.split("\n")[0]}...</p>
                             </div>
                           )}
                         </div>
@@ -349,7 +349,7 @@ export default function DoctorDashboardPage() {
                           {consultation.doctorNotes && (
                             <div className="mt-2 p-2 bg-blue-50 rounded-md">
                               <p className="text-sm font-medium text-blue-800">Your Notes:</p>
-                              <p className="text-sm text-blue-700">{consultation.doctorNotes}</p>
+                              <p className="text-sm text-blue-700">{consultation.doctorNotes.split("\n")[0]}...</p>
                             </div>
                           )}
                         </div>
