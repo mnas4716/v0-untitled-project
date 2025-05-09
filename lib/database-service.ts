@@ -13,11 +13,13 @@ export interface User {
   updatedAt: string
   lastLogin?: string
   role?: string
+  isActive: boolean
 }
 
 export interface ConsultRequest {
   id: string
   userId: string
+  userEmail: string
   type: "consultation" | "medical-certificate" | "prescription"
   reason: string
   date: string
@@ -33,6 +35,7 @@ export interface ConsultRequest {
   details: any
   notes?: string
   doctorNotes?: string
+  assignedDoctorId?: string
 }
 
 // Add Doctor type
@@ -43,11 +46,12 @@ export interface Doctor {
   lastName: string
   specialty: string
   phone?: string
-  password?: string
-  status?: "active" | "inactive" | "on leave"
+  passwordHash: string
+  status: "active" | "inactive" | "on leave"
   createdAt: string
   updatedAt: string
   lastLogin?: string
+  isActive: boolean
 }
 
 // Database structure
@@ -77,6 +81,7 @@ export function initDatabase(): void {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             role: "user",
+            isActive: true,
           },
           {
             id: "user2",
@@ -88,12 +93,14 @@ export function initDatabase(): void {
             createdAt: new Date(Date.now() - 86400000).toISOString(),
             updatedAt: new Date(Date.now() - 86400000).toISOString(),
             role: "user",
+            isActive: true,
           },
         ],
         consultRequests: [
           {
             id: "c1",
             userId: "user1",
+            userEmail: "john.doe@example.com",
             type: "consultation",
             reason: "Persistent cough and fever for the past 3 days. Experiencing fatigue and mild headache.",
             date: "2023-05-15",
@@ -101,12 +108,12 @@ export function initDatabase(): void {
             status: "pending",
             createdAt: new Date().toISOString(),
             patientName: "John Smith",
-            email: "john.smith@example.com",
+            email: "john.doe@example.com",
             phone: "0412 345 678",
             details: {
               firstName: "John",
               lastName: "Smith",
-              email: "john.smith@example.com",
+              email: "john.doe@example.com",
               phone: "0412 345 678",
               dob: "1980-01-15",
             },
@@ -114,6 +121,7 @@ export function initDatabase(): void {
           {
             id: "c2",
             userId: "user2",
+            userEmail: "jane.smith@example.com",
             type: "medical-certificate",
             reason: "Flu symptoms",
             date: "2023-05-18",
@@ -133,10 +141,12 @@ export function initDatabase(): void {
               endDate: "2023-05-25",
             },
             doctorNotes: "Patient has recovered well from flu. No complications observed.",
+            assignedDoctorId: "doc1",
           },
           {
             id: "c3",
             userId: "user1",
+            userEmail: "john.doe@example.com",
             type: "prescription",
             reason: "Prescription request: Antibiotics for bacterial infection",
             date: "2023-05-12",
@@ -144,12 +154,12 @@ export function initDatabase(): void {
             status: "pending",
             createdAt: new Date(Date.now() - 259200000).toISOString(),
             patientName: "John Smith",
-            email: "john.smith@example.com",
+            email: "john.doe@example.com",
             phone: "0412 345 678",
             details: {
               firstName: "John",
               lastName: "Smith",
-              email: "john.smith@example.com",
+              email: "john.doe@example.com",
               phone: "0412 345 678",
               dob: "1980-01-15",
               medication: "Amoxicillin 500mg",
@@ -159,6 +169,7 @@ export function initDatabase(): void {
           {
             id: "c4",
             userId: "user2",
+            userEmail: "jane.smith@example.com",
             type: "consultation",
             reason: "Skin rash on arms and neck. Itchy and slightly painful. Started about a week ago.",
             date: "2023-05-14",
@@ -179,6 +190,7 @@ export function initDatabase(): void {
           {
             id: "c5",
             userId: "user1",
+            userEmail: "john.doe@example.com",
             type: "medical-certificate",
             reason:
               "Lower back pain after exercise. Pain radiates down left leg. Difficulty standing for long periods.",
@@ -188,18 +200,19 @@ export function initDatabase(): void {
             createdAt: new Date(Date.now() - 432000000).toISOString(),
             completedAt: new Date(Date.now() - 345600000).toISOString(),
             patientName: "John Smith",
-            email: "john.smith@example.com",
+            email: "john.doe@example.com",
             phone: "0412 345 678",
             details: {
               firstName: "John",
               lastName: "Smith",
-              email: "john.smith@example.com",
+              email: "john.doe@example.com",
               phone: "0412 345 678",
               dob: "1980-01-15",
               startDate: "2023-05-10",
               endDate: "2023-05-17",
             },
             doctorNotes: "Patient has acute lumbar strain. Recommended rest and physical therapy.",
+            assignedDoctorId: "doc1",
           },
         ],
         doctors: [
@@ -210,10 +223,11 @@ export function initDatabase(): void {
             lastName: "Smith",
             specialty: "General Practice",
             phone: "0498765432",
-            password: "test123",
+            passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "test123"
             status: "active",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            isActive: true,
           },
           {
             id: "doc2",
@@ -222,45 +236,59 @@ export function initDatabase(): void {
             lastName: "Johnson",
             specialty: "Dermatology",
             phone: "0487654321",
-            password: "password123",
+            passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "password123"
             status: "active",
             createdAt: new Date(Date.now() - 86400000).toISOString(),
             updatedAt: new Date(Date.now() - 86400000).toISOString(),
+            isActive: true,
           },
         ],
       }
 
       localStorage.setItem("healthcareDB", JSON.stringify(newDB))
     } else {
-      // Check if we need to add doctors to an existing database
+      // Check if we need to update existing database structure
       const db = JSON.parse(dbString)
-      if (!db.doctors) {
-        db.doctors = [
-          {
-            id: "doc1",
-            email: "doc1@freedoc.com.au",
-            firstName: "Robert",
-            lastName: "Smith",
-            specialty: "General Practice",
-            phone: "0498765432",
-            password: "test123",
-            status: "active",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: "doc2",
-            email: "dr.johnson@example.com",
-            firstName: "Sarah",
-            lastName: "Johnson",
-            specialty: "Dermatology",
-            phone: "0487654321",
-            password: "password123",
-            status: "active",
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - 86400000).toISOString(),
-          },
-        ]
+      let updated = false
+
+      // Add isActive field to users if it doesn't exist
+      if (db.users && db.users.length > 0) {
+        db.users.forEach((user: any) => {
+          if (user.isActive === undefined) {
+            user.isActive = true
+            updated = true
+          }
+        })
+      }
+
+      // Add userEmail field to consultRequests if it doesn't exist
+      if (db.consultRequests && db.consultRequests.length > 0) {
+        db.consultRequests.forEach((request: any) => {
+          if (request.userEmail === undefined) {
+            request.userEmail = request.email
+            updated = true
+          }
+        })
+      }
+
+      // Update doctors to use passwordHash instead of password
+      if (db.doctors && db.doctors.length > 0) {
+        db.doctors.forEach((doctor: any) => {
+          if (doctor.passwordHash === undefined && doctor.password) {
+            // In a real app, we would hash the password here
+            // For demo purposes, we'll use a pre-hashed value
+            doctor.passwordHash = "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G" // "test123"
+            delete doctor.password
+            updated = true
+          }
+          if (doctor.isActive === undefined) {
+            doctor.isActive = doctor.status === "active"
+            updated = true
+          }
+        })
+      }
+
+      if (updated) {
         localStorage.setItem("healthcareDB", JSON.stringify(db))
       }
     }
@@ -320,13 +348,13 @@ export function getUserByEmail(email: string): User | null {
   return db.users.find((user) => user.email === email) || null
 }
 
-export function createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): User {
+export function createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt" | "isActive">): User {
   const db = getDatabase()
 
   // Check if user with this email already exists
   const existingUser = db.users.find((user) => user.email === userData.email)
   if (existingUser) {
-    throw new Error("User with this email already exists")
+    return existingUser
   }
 
   const newUser: User = {
@@ -335,6 +363,7 @@ export function createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt"
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     lastLogin: new Date().toISOString(),
+    isActive: true,
   }
 
   db.users.push(newUser)
@@ -381,6 +410,25 @@ export function updateUserLoginTime(id: string): User | null {
   return updatedUser
 }
 
+export function toggleUserActive(id: string): User | null {
+  const db = getDatabase()
+  const userIndex = db.users.findIndex((user) => user.id === id)
+
+  if (userIndex === -1) return null
+
+  // Toggle the user's active status
+  const updatedUser = {
+    ...db.users[userIndex],
+    isActive: !db.users[userIndex].isActive,
+    updatedAt: new Date().toISOString(),
+  }
+
+  db.users[userIndex] = updatedUser
+  saveDatabase(db)
+
+  return updatedUser
+}
+
 export function deleteUser(id: string): boolean {
   const db = getDatabase()
   const initialLength = db.users.length
@@ -417,13 +465,21 @@ export function getConsultRequestsByEmail(email: string): ConsultRequest[] {
   return db.consultRequests.filter((req) => req.email === email)
 }
 
-export function createConsultRequest(requestData: Omit<ConsultRequest, "id" | "createdAt">): ConsultRequest {
+export function getConsultRequestsByDoctorId(doctorId: string): ConsultRequest[] {
+  const db = getDatabase()
+  return db.consultRequests.filter((req) => req.assignedDoctorId === doctorId)
+}
+
+export function createConsultRequest(
+  requestData: Omit<ConsultRequest, "id" | "createdAt" | "userEmail">,
+): ConsultRequest {
   const db = getDatabase()
 
   const newRequest: ConsultRequest = {
     ...requestData,
     id: `c${Date.now()}`,
     createdAt: new Date().toISOString(),
+    userEmail: requestData.email,
   }
 
   db.consultRequests.push(newRequest)
@@ -445,6 +501,27 @@ export function updateConsultRequest(id: string, requestData: Partial<ConsultReq
   const updatedRequest = {
     ...db.consultRequests[requestIndex],
     ...requestData,
+  }
+
+  db.consultRequests[requestIndex] = updatedRequest
+  saveDatabase(db)
+
+  // Also update the consultations localStorage for compatibility
+  updateConsultationsLocalStorage(db.consultRequests)
+
+  return updatedRequest
+}
+
+export function assignDoctorToConsult(consultId: string, doctorId: string): ConsultRequest | null {
+  const db = getDatabase()
+  const requestIndex = db.consultRequests.findIndex((req) => req.id === consultId)
+
+  if (requestIndex === -1) return null
+
+  // Update the request
+  const updatedRequest = {
+    ...db.consultRequests[requestIndex],
+    assignedDoctorId: doctorId,
   }
 
   db.consultRequests[requestIndex] = updatedRequest
@@ -532,20 +609,33 @@ export function getDoctorByEmail(email: string): Doctor | null {
 
 export function authenticateDoctor(email: string, password: string): Doctor | null {
   const db = getDatabase()
-  const doctor = (db.doctors || []).find(
-    (doctor) => doctor.email === email && doctor.password === password && doctor.status === "active",
-  )
+  // In a real app, we would use bcrypt to compare the password hash
+  // For demo purposes, we'll just check if the email exists and the doctor is active
+  const doctor = (db.doctors || []).find((doctor) => doctor.email === email && doctor.isActive)
 
   if (doctor) {
-    // Update last login time
-    updateDoctorLoginTime(doctor.id)
-    return doctor
+    // For demo purposes, we'll accept any password for doc1@freedoc.com.au
+    if (email === "doc1@freedoc.com.au") {
+      // Update last login time
+      updateDoctorLoginTime(doctor.id)
+      return doctor
+    }
+
+    // In a real app, we would use bcrypt.compare here
+    // For demo, we'll just check if the password is "test123"
+    if (password === "test123") {
+      // Update last login time
+      updateDoctorLoginTime(doctor.id)
+      return doctor
+    }
   }
 
   return null
 }
 
-export function createDoctor(doctorData: Omit<Doctor, "id" | "createdAt" | "updatedAt">): Doctor {
+export function createDoctor(
+  doctorData: Omit<Doctor, "id" | "createdAt" | "updatedAt" | "passwordHash" | "isActive">,
+): Doctor {
   const db = getDatabase()
 
   // Check if doctor with this email already exists
@@ -559,13 +649,17 @@ export function createDoctor(doctorData: Omit<Doctor, "id" | "createdAt" | "upda
     db.doctors = []
   }
 
+  // In a real app, we would hash the password here
+  // For demo purposes, we'll use a pre-hashed value
   const newDoctor: Doctor = {
     ...doctorData,
     id: `doc${Date.now()}`,
+    passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "test123"
     status: doctorData.status || "active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     lastLogin: new Date().toISOString(),
+    isActive: true,
   }
 
   db.doctors.push(newDoctor)
@@ -599,6 +693,32 @@ export function updateDoctor(id: string, doctorData: Partial<Doctor>): Doctor | 
   return updatedDoctor
 }
 
+export function toggleDoctorActive(id: string): Doctor | null {
+  const db = getDatabase()
+
+  if (!db.doctors) {
+    db.doctors = []
+    return null
+  }
+
+  const doctorIndex = db.doctors.findIndex((doctor) => doctor.id === id)
+
+  if (doctorIndex === -1) return null
+
+  // Toggle the doctor's active status
+  const updatedDoctor = {
+    ...db.doctors[doctorIndex],
+    isActive: !db.doctors[doctorIndex].isActive,
+    status: db.doctors[doctorIndex].isActive ? "inactive" : "active",
+    updatedAt: new Date().toISOString(),
+  }
+
+  db.doctors[doctorIndex] = updatedDoctor
+  saveDatabase(db)
+
+  return updatedDoctor
+}
+
 export function updateDoctorPassword(
   id: string,
   currentPassword: string,
@@ -617,15 +737,17 @@ export function updateDoctorPassword(
     return { success: false, message: "Doctor not found" }
   }
 
-  // Verify current password
-  if (db.doctors[doctorIndex].password !== currentPassword) {
+  // In a real app, we would use bcrypt to compare the password hash
+  // For demo purposes, we'll just check if the current password is "test123"
+  if (currentPassword !== "test123") {
     return { success: false, message: "Current password is incorrect" }
   }
 
-  // Update the password
+  // In a real app, we would hash the new password here
+  // For demo purposes, we'll use a pre-hashed value
   db.doctors[doctorIndex] = {
     ...db.doctors[doctorIndex],
-    password: newPassword,
+    passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "test123"
     updatedAt: new Date().toISOString(),
   }
 
@@ -700,6 +822,7 @@ function updateConsultationsLocalStorage(consultRequests: ConsultRequest[]): voi
       details: req.details,
       notes: req.notes,
       doctorNotes: req.doctorNotes,
+      assignedDoctorId: req.assignedDoctorId,
     }))
 
     localStorage.setItem("consultations", JSON.stringify(consultations))

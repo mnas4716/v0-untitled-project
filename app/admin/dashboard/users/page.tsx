@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Search, Download, MoreHorizontal, Mail, Trash2, Edit } from "lucide-react"
+import { Search, Download, MoreHorizontal, Mail, Trash2, Edit, UserX, UserCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -23,11 +23,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import {
   getAllUsers,
   getConsultRequestsByUserId,
+  toggleUserActive,
   type User,
   type ConsultRequest,
   deleteUser,
   initDatabase,
 } from "@/lib/database-service"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -37,6 +39,7 @@ export default function UsersPage() {
   const [userRequests, setUserRequests] = useState<ConsultRequest[]>([])
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
 
   // Initialize database and load users
   useEffect(() => {
@@ -94,6 +97,33 @@ export default function UsersPage() {
     setIsViewDialogOpen(true)
   }
 
+  const handleToggleUserActive = (userId: string) => {
+    try {
+      const updatedUser = toggleUserActive(userId)
+      if (updatedUser) {
+        setUsers((prevUsers) =>
+          prevUsers.map((user) => (user.id === userId ? { ...user, isActive: updatedUser.isActive } : user)),
+        )
+
+        if (selectedUser?.id === userId) {
+          setSelectedUser({ ...selectedUser, isActive: updatedUser.isActive })
+        }
+
+        toast({
+          title: updatedUser.isActive ? "User Activated" : "User Deactivated",
+          description: `User ${updatedUser.email} has been ${updatedUser.isActive ? "activated" : "deactivated"}.`,
+        })
+      }
+    } catch (error) {
+      console.error("Error toggling user active status:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update user status.",
+      })
+    }
+  }
+
   const handleDeleteUser = (userId: string) => {
     if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
       const success = deleteUser(userId)
@@ -102,6 +132,10 @@ export default function UsersPage() {
         if (selectedUser?.id === userId) {
           setIsViewDialogOpen(false)
         }
+        toast({
+          title: "User Deleted",
+          description: "User has been permanently removed.",
+        })
       }
     }
   }
@@ -163,19 +197,20 @@ export default function UsersPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Registered</TableHead>
                   <TableHead>Last Updated</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       Loading users...
                     </TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       No users found
                     </TableCell>
                   </TableRow>
@@ -207,6 +242,13 @@ export default function UsersPage() {
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{formatDate(user.createdAt)}</TableCell>
                       <TableCell>{formatDate(user.updatedAt)}</TableCell>
+                      <TableCell>
+                        {user.isActive ? (
+                          <Badge className="bg-green-100 text-green-800">Active</Badge>
+                        ) : (
+                          <Badge className="bg-red-100 text-red-800">Inactive</Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -219,6 +261,17 @@ export default function UsersPage() {
                             <DropdownMenuItem onClick={() => handleViewUser(user)}>View Details</DropdownMenuItem>
                             <DropdownMenuItem>Edit User</DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleToggleUserActive(user.id)}>
+                              {user.isActive ? (
+                                <>
+                                  <UserX className="mr-2 h-4 w-4" /> Deactivate User
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck className="mr-2 h-4 w-4" /> Activate User
+                                </>
+                              )}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-red-600">
                               <Trash2 className="mr-2 h-4 w-4" /> Delete User
                             </DropdownMenuItem>
@@ -260,6 +313,11 @@ export default function UsersPage() {
                   {selectedUser.firstName} {selectedUser.lastName}
                 </h3>
                 <p className="text-gray-500 text-center">{selectedUser.email}</p>
+                {selectedUser.isActive ? (
+                  <Badge className="mt-2 bg-green-100 text-green-800">Active</Badge>
+                ) : (
+                  <Badge className="mt-2 bg-red-100 text-red-800">Inactive</Badge>
+                )}
 
                 <div className="mt-4 w-full space-y-2">
                   <Button variant="outline" className="w-full justify-start">
@@ -267,6 +325,21 @@ export default function UsersPage() {
                   </Button>
                   <Button variant="outline" className="w-full justify-start">
                     <Edit className="mr-2 h-4 w-4" /> Edit User
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => handleToggleUserActive(selectedUser.id)}
+                  >
+                    {selectedUser.isActive ? (
+                      <>
+                        <UserX className="mr-2 h-4 w-4" /> Deactivate User
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="mr-2 h-4 w-4" /> Activate User
+                      </>
+                    )}
                   </Button>
                   <Button
                     variant="outline"
@@ -356,7 +429,9 @@ export default function UsersPage() {
                                   className={
                                     request.status === "pending"
                                       ? "bg-amber-100 text-amber-800"
-                                      : "bg-green-100 text-green-800"
+                                      : request.status === "completed"
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-red-100 text-red-800"
                                   }
                                 >
                                   {request.status}
