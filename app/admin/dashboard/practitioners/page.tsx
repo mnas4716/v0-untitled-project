@@ -3,7 +3,7 @@
 import { DialogTrigger } from "@/components/ui/dialog"
 
 import { useState, useEffect, useMemo } from "react"
-import { Search, Download, MoreHorizontal, Mail, Stethoscope, Calendar } from "lucide-react"
+import { Search, Download, MoreHorizontal, Mail, Stethoscope, Calendar, Eye, EyeOff } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -31,9 +31,11 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 // Mock practitioner data
-const practitioners = [
+const initialPractitioners = [
   {
     id: "P1001",
     firstName: "Robert",
@@ -41,6 +43,7 @@ const practitioners = [
     title: "MD",
     specialty: "Family Medicine",
     email: "robert.johnson@freedoc.com",
+    password: "password123", // In a real app, this would be hashed
     phone: "(555) 123-4567",
     status: "active",
     patients: 124,
@@ -55,6 +58,7 @@ const practitioners = [
     title: "MD",
     specialty: "Internal Medicine",
     email: "sarah.miller@freedoc.com",
+    password: "password123", // In a real app, this would be hashed
     phone: "(555) 234-5678",
     status: "active",
     patients: 98,
@@ -63,57 +67,45 @@ const practitioners = [
     avatar: "/placeholder.svg?height=40&width=40",
   },
   {
-    id: "P1003",
-    firstName: "David",
-    lastName: "Wilson",
+    id: "doc1",
+    firstName: "Robert",
+    lastName: "Smith",
     title: "MD",
-    specialty: "Pediatrics",
-    email: "david.wilson@freedoc.com",
-    phone: "(555) 345-6789",
+    specialty: "General Practice",
+    email: "doc1@freedoc.com.au",
+    password: "test123", // In a real app, this would be hashed
+    phone: "0498765432",
     status: "active",
     patients: 156,
     consultations: 67,
     joinedDate: "2021-11-10",
     avatar: "/placeholder.svg?height=40&width=40",
   },
-  {
-    id: "P1004",
-    firstName: "Jennifer",
-    lastName: "Lee",
-    title: "MD",
-    specialty: "Dermatology",
-    email: "jennifer.lee@freedoc.com",
-    phone: "(555) 456-7890",
-    status: "on leave",
-    patients: 87,
-    consultations: 28,
-    joinedDate: "2022-01-05",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "P1005",
-    firstName: "Michael",
-    lastName: "Brown",
-    title: "MD",
-    specialty: "Cardiology",
-    email: "michael.brown@freedoc.com",
-    phone: "(555) 567-8901",
-    status: "active",
-    patients: 76,
-    consultations: 41,
-    joinedDate: "2021-09-12",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
 ]
 
 export default function PractitionersPage() {
+  const [practitioners, setPractitioners] = useState(initialPractitioners)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedPractitioners, setSelectedPractitioners] = useState<string[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedPractitioner, setSelectedPractitioner] = useState<(typeof practitioners)[0] | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    title: "",
+    specialty: "",
+    email: "",
+    phone: "",
+    password: "",
+    status: "active",
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [formError, setFormError] = useState("")
+  const { toast } = useToast()
 
   // Simulate loading data
   useEffect(() => {
@@ -136,7 +128,7 @@ export default function PractitionersPage() {
 
       return matchesSearch && matchesStatus
     })
-  }, [searchTerm, statusFilter])
+  }, [practitioners, searchTerm, statusFilter])
 
   const togglePractitionerSelection = (practitionerId: string) => {
     setSelectedPractitioners((prev) => {
@@ -159,6 +151,145 @@ export default function PractitionersPage() {
   const handleViewPractitioner = (practitioner: (typeof practitioners)[0]) => {
     setSelectedPractitioner(practitioner)
     setIsViewDialogOpen(true)
+  }
+
+  const handleEditPractitioner = (practitioner: (typeof practitioners)[0]) => {
+    setSelectedPractitioner(practitioner)
+    setFormData({
+      firstName: practitioner.firstName,
+      lastName: practitioner.lastName,
+      title: practitioner.title,
+      specialty: practitioner.specialty,
+      email: practitioner.email,
+      phone: practitioner.phone,
+      password: practitioner.password,
+      status: practitioner.status,
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleAddPractitioner = () => {
+    setFormError("")
+    // Validate form
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      setFormError("Please fill in all required fields")
+      return
+    }
+
+    // Check if email already exists
+    if (practitioners.some((p) => p.email === formData.email)) {
+      setFormError("A practitioner with this email already exists")
+      return
+    }
+
+    // Create new practitioner
+    const newPractitioner = {
+      id: `P${Date.now()}`,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      title: formData.title || "MD",
+      specialty: formData.specialty || "General Practice",
+      email: formData.email,
+      password: formData.password, // In a real app, this would be hashed
+      phone: formData.phone || "",
+      status: formData.status || "active",
+      patients: 0,
+      consultations: 0,
+      joinedDate: new Date().toISOString().split("T")[0],
+      avatar: "/placeholder.svg?height=40&width=40",
+    }
+
+    setPractitioners([...practitioners, newPractitioner])
+    setIsAddDialogOpen(false)
+    setFormData({
+      firstName: "",
+      lastName: "",
+      title: "",
+      specialty: "",
+      email: "",
+      phone: "",
+      password: "",
+      status: "active",
+    })
+
+    toast({
+      title: "Success",
+      description: "Practitioner added successfully",
+    })
+  }
+
+  const handleUpdatePractitioner = () => {
+    setFormError("")
+    if (!selectedPractitioner) return
+
+    // Validate form
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      setFormError("Please fill in all required fields")
+      return
+    }
+
+    // Check if email already exists (excluding the current practitioner)
+    if (practitioners.some((p) => p.email === formData.email && p.id !== selectedPractitioner.id)) {
+      setFormError("A practitioner with this email already exists")
+      return
+    }
+
+    // Update practitioner
+    const updatedPractitioners = practitioners.map((p) => {
+      if (p.id === selectedPractitioner.id) {
+        return {
+          ...p,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          title: formData.title || p.title,
+          specialty: formData.specialty || p.specialty,
+          email: formData.email,
+          password: formData.password || p.password, // Only update if provided
+          phone: formData.phone || p.phone,
+          status: formData.status || p.status,
+        }
+      }
+      return p
+    })
+
+    setPractitioners(updatedPractitioners)
+    setIsEditDialogOpen(false)
+    setSelectedPractitioner(null)
+
+    toast({
+      title: "Success",
+      description: "Practitioner updated successfully",
+    })
+  }
+
+  const handleToggleStatus = (practitioner: (typeof practitioners)[0]) => {
+    const newStatus = practitioner.status === "active" ? "inactive" : "active"
+    const updatedPractitioners = practitioners.map((p) => {
+      if (p.id === practitioner.id) {
+        return {
+          ...p,
+          status: newStatus,
+        }
+      }
+      return p
+    })
+
+    setPractitioners(updatedPractitioners)
+
+    toast({
+      title: "Status Updated",
+      description: `Practitioner status changed to ${newStatus}`,
+    })
+  }
+
+  const handleDeletePractitioner = (id: string) => {
+    setPractitioners(practitioners.filter((p) => p.id !== id))
+
+    toast({
+      title: "Practitioner Deleted",
+      description: "Practitioner has been removed from the system",
+      variant: "destructive",
+    })
   }
 
   // Format date for display
@@ -189,27 +320,42 @@ export default function PractitionersPage() {
               <DialogTitle>Add New Practitioner</DialogTitle>
               <DialogDescription>Enter the practitioner's information to create a new profile.</DialogDescription>
             </DialogHeader>
+            {formError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{formError}</AlertDescription>
+              </Alert>
+            )}
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" placeholder="First name" />
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input
+                    id="firstName"
+                    placeholder="First name"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" placeholder="Last name" />
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input
+                    id="lastName"
+                    placeholder="Last name"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="title">Title</Label>
-                  <Select>
+                  <Select value={formData.title} onValueChange={(value) => setFormData({ ...formData, title: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select title" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="md">MD</SelectItem>
-                      <SelectItem value="do">DO</SelectItem>
-                      <SelectItem value="np">NP</SelectItem>
-                      <SelectItem value="pa">PA</SelectItem>
+                      <SelectItem value="MD">MD</SelectItem>
+                      <SelectItem value="DO">DO</SelectItem>
+                      <SelectItem value="NP">NP</SelectItem>
+                      <SelectItem value="PA">PA</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -217,42 +363,80 @@ export default function PractitionersPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="specialty">Specialty</Label>
-                <Select>
+                <Select
+                  value={formData.specialty}
+                  onValueChange={(value) => setFormData({ ...formData, specialty: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select specialty" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="family-medicine">Family Medicine</SelectItem>
-                    <SelectItem value="internal-medicine">Internal Medicine</SelectItem>
-                    <SelectItem value="pediatrics">Pediatrics</SelectItem>
-                    <SelectItem value="dermatology">Dermatology</SelectItem>
-                    <SelectItem value="cardiology">Cardiology</SelectItem>
-                    <SelectItem value="psychiatry">Psychiatry</SelectItem>
-                    <SelectItem value="orthopedics">Orthopedics</SelectItem>
+                    <SelectItem value="Family Medicine">Family Medicine</SelectItem>
+                    <SelectItem value="Internal Medicine">Internal Medicine</SelectItem>
+                    <SelectItem value="Pediatrics">Pediatrics</SelectItem>
+                    <SelectItem value="Dermatology">Dermatology</SelectItem>
+                    <SelectItem value="Cardiology">Cardiology</SelectItem>
+                    <SelectItem value="Psychiatry">Psychiatry</SelectItem>
+                    <SelectItem value="Orthopedics">Orthopedics</SelectItem>
+                    <SelectItem value="General Practice">General Practice</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="Email address" />
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Email address"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" placeholder="Phone number" />
+                  <Input
+                    id="phone"
+                    placeholder="Phone number"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                  </Button>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="on-leave">On Leave</SelectItem>
+                    <SelectItem value="on leave">On Leave</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
@@ -262,7 +446,7 @@ export default function PractitionersPage() {
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="bg-[#00473e] hover:bg-[#00695f]" onClick={() => setIsAddDialogOpen(false)}>
+              <Button className="bg-[#00473e] hover:bg-[#00695f]" onClick={handleAddPractitioner}>
                 Add Practitioner
               </Button>
             </DialogFooter>
@@ -400,8 +584,13 @@ export default function PractitionersPage() {
                             <DropdownMenuItem onClick={() => handleViewPractitioner(practitioner)}>
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Edit Practitioner</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditPractitioner(practitioner)}>
+                              Edit Practitioner
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleToggleStatus(practitioner)}>
+                              {practitioner.status === "active" ? "Deactivate" : "Activate"} Practitioner
+                            </DropdownMenuItem>
                             <DropdownMenuItem>
                               <Calendar className="mr-2 h-4 w-4" /> View Schedule
                             </DropdownMenuItem>
@@ -409,7 +598,12 @@ export default function PractitionersPage() {
                               <Stethoscope className="mr-2 h-4 w-4" /> View Consultations
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">Delete Practitioner</DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeletePractitioner(practitioner.id)}
+                            >
+                              Delete Practitioner
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -468,7 +662,15 @@ export default function PractitionersPage() {
                   <Button variant="outline" className="w-full justify-start">
                     <Mail className="mr-2 h-4 w-4" /> Send Message
                   </Button>
-                  <Button className="w-full justify-center bg-[#00473e] hover:bg-[#00695f]">Edit Profile</Button>
+                  <Button
+                    className="w-full justify-center bg-[#00473e] hover:bg-[#00695f]"
+                    onClick={() => {
+                      setIsViewDialogOpen(false)
+                      handleEditPractitioner(selectedPractitioner)
+                    }}
+                  >
+                    Edit Profile
+                  </Button>
                 </div>
               </div>
 
@@ -546,6 +748,146 @@ export default function PractitionersPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Edit Practitioner Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit Practitioner</DialogTitle>
+            <DialogDescription>Update the practitioner's information.</DialogDescription>
+          </DialogHeader>
+          {formError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
+          )}
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-firstName">First Name *</Label>
+                <Input
+                  id="edit-firstName"
+                  placeholder="First name"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-lastName">Last Name *</Label>
+                <Input
+                  id="edit-lastName"
+                  placeholder="Last name"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-title">Title</Label>
+                <Select value={formData.title} onValueChange={(value) => setFormData({ ...formData, title: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select title" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MD">MD</SelectItem>
+                    <SelectItem value="DO">DO</SelectItem>
+                    <SelectItem value="NP">NP</SelectItem>
+                    <SelectItem value="PA">PA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-specialty">Specialty</Label>
+              <Select
+                value={formData.specialty}
+                onValueChange={(value) => setFormData({ ...formData, specialty: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select specialty" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Family Medicine">Family Medicine</SelectItem>
+                  <SelectItem value="Internal Medicine">Internal Medicine</SelectItem>
+                  <SelectItem value="Pediatrics">Pediatrics</SelectItem>
+                  <SelectItem value="Dermatology">Dermatology</SelectItem>
+                  <SelectItem value="Cardiology">Cardiology</SelectItem>
+                  <SelectItem value="Psychiatry">Psychiatry</SelectItem>
+                  <SelectItem value="Orthopedics">Orthopedics</SelectItem>
+                  <SelectItem value="General Practice">General Practice</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email *</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  placeholder="Email address"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Phone Number</Label>
+                <Input
+                  id="edit-phone"
+                  placeholder="Phone number"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-password">Password (leave blank to keep current)</Label>
+              <div className="relative">
+                <Input
+                  id="edit-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter new password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="on leave">On Leave</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button className="bg-[#00473e] hover:bg-[#00695f]" onClick={handleUpdatePractitioner}>
+              Update Practitioner
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

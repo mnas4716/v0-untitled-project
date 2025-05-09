@@ -1,7 +1,8 @@
-import { Resend } from "resend"
-import { EmailTemplate } from "@/components/email-template"
+// Comment out or remove the Resend import temporarily
+// import { Resend } from 'resend';
+// import { EmailTemplate } from "@/components/email-template"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// const resend = new Resend(process.env.RESEND_API_KEY);
 
 type EmailType = "otp" | "consult" | "prescription" | "medical-certificate" | "contact" | "admin-notification"
 
@@ -14,6 +15,13 @@ interface EmailOptions {
   data?: Record<string, any>
 }
 
+export const sendOtpEmail = async (email: string, otp: string) => {
+  // TEMPORARY FIX: Log OTP to the console instead of sending it
+  console.log(`Sending OTP to ${email}: ${otp}`)
+  // You can also simulate a successful send:
+  return { success: true }
+}
+
 export async function sendConfirmationEmail(options: EmailOptions) {
   const { type, name, email, details, data } = options
   const to = options.to || email || ""
@@ -24,75 +32,27 @@ export async function sendConfirmationEmail(options: EmailOptions) {
   }
 
   try {
-    let subject = ""
-    let emailData: Record<string, any> = {}
+    // TEMPORARY FIX: Log the email details instead of sending
+    console.log(`[EMAIL SIMULATION] Sending ${type} email to ${to}`)
 
-    switch (type) {
-      case "otp":
-        subject = "Your One-Time Password"
-        emailData = {
-          name: name || "User",
-          otp: details?.otp || "123456",
-          expiresIn: "15 minutes",
-        }
-        break
-      case "consult":
-        subject = "Consultation Request Confirmation"
-        emailData = {
-          name: name || "User",
-          reason: details?.reason || "",
-        }
-        break
-      case "prescription":
-        subject = "Prescription Request Confirmation"
-        emailData = {
-          name: name || "User",
-          medication: details?.medication || "",
-        }
-        break
-      case "medical-certificate":
-        subject = "Medical Certificate Request Confirmation"
-        emailData = {
-          name: name || "User",
-          startDate: details?.startDate || "",
-          endDate: details?.endDate || "",
-        }
-        break
-      case "contact":
-        subject = "Contact Form Submission Confirmation"
-        emailData = {
-          name: name || "User",
-          message: details?.message || "",
-        }
-        break
-      case "admin-notification":
-        subject = `New ${data?.type || "Request"} from ${data?.name || "a user"}`
-        emailData = {
-          type: data?.type || "Request",
-          name: data?.name || "User",
-          email: data?.email || "",
-          phone: data?.phone || "",
-          message: data?.reason || data?.message || "",
-        }
-        break
-      default:
-        subject = "Notification from FreeDOC"
-        emailData = {
-          name: name || "User",
-        }
+    if (type === "otp" && details?.otp) {
+      console.log(`[OTP CODE] ${details.otp}`)
     }
 
-    console.log(`Sending ${type} email to ${to}`)
-
-    const result = await resend.emails.send({
-      from: "FreeDOC <noreply@freedoc.com.au>",
-      to: [to],
-      subject,
-      react: EmailTemplate({ type, data: emailData }),
+    // Log other details for debugging
+    console.log("[EMAIL DETAILS]", {
+      type,
+      to,
+      name: name || "User",
+      details,
     })
 
-    console.log("Email sent successfully:", result)
-    return { success: true, result }
+    // Simulate successful email sending
+    return {
+      success: true,
+      result: { id: `simulated-email-${Date.now()}` },
+      devNote: "Email sending simulated - check console for details",
+    }
   } catch (error) {
     console.error("Failed to send email:", error)
     return { success: false, error }

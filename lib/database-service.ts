@@ -43,6 +43,8 @@ export interface Doctor {
   lastName: string
   specialty: string
   phone?: string
+  password?: string
+  status?: "active" | "inactive" | "on leave"
   createdAt: string
   updatedAt: string
   lastLogin?: string
@@ -203,11 +205,13 @@ export function initDatabase(): void {
         doctors: [
           {
             id: "doc1",
-            email: "dr.smith@example.com",
+            email: "doc1@freedoc.com.au",
             firstName: "Robert",
             lastName: "Smith",
             specialty: "General Practice",
             phone: "0498765432",
+            password: "test123",
+            status: "active",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
@@ -218,6 +222,8 @@ export function initDatabase(): void {
             lastName: "Johnson",
             specialty: "Dermatology",
             phone: "0487654321",
+            password: "password123",
+            status: "active",
             createdAt: new Date(Date.now() - 86400000).toISOString(),
             updatedAt: new Date(Date.now() - 86400000).toISOString(),
           },
@@ -232,11 +238,13 @@ export function initDatabase(): void {
         db.doctors = [
           {
             id: "doc1",
-            email: "dr.smith@example.com",
+            email: "doc1@freedoc.com.au",
             firstName: "Robert",
             lastName: "Smith",
             specialty: "General Practice",
             phone: "0498765432",
+            password: "test123",
+            status: "active",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
@@ -247,6 +255,8 @@ export function initDatabase(): void {
             lastName: "Johnson",
             specialty: "Dermatology",
             phone: "0487654321",
+            password: "password123",
+            status: "active",
             createdAt: new Date(Date.now() - 86400000).toISOString(),
             updatedAt: new Date(Date.now() - 86400000).toISOString(),
           },
@@ -520,6 +530,21 @@ export function getDoctorByEmail(email: string): Doctor | null {
   return (db.doctors || []).find((doctor) => doctor.email === email) || null
 }
 
+export function authenticateDoctor(email: string, password: string): Doctor | null {
+  const db = getDatabase()
+  const doctor = (db.doctors || []).find(
+    (doctor) => doctor.email === email && doctor.password === password && doctor.status === "active",
+  )
+
+  if (doctor) {
+    // Update last login time
+    updateDoctorLoginTime(doctor.id)
+    return doctor
+  }
+
+  return null
+}
+
 export function createDoctor(doctorData: Omit<Doctor, "id" | "createdAt" | "updatedAt">): Doctor {
   const db = getDatabase()
 
@@ -537,6 +562,7 @@ export function createDoctor(doctorData: Omit<Doctor, "id" | "createdAt" | "upda
   const newDoctor: Doctor = {
     ...doctorData,
     id: `doc${Date.now()}`,
+    status: doctorData.status || "active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     lastLogin: new Date().toISOString(),
@@ -571,6 +597,41 @@ export function updateDoctor(id: string, doctorData: Partial<Doctor>): Doctor | 
   saveDatabase(db)
 
   return updatedDoctor
+}
+
+export function updateDoctorPassword(
+  id: string,
+  currentPassword: string,
+  newPassword: string,
+): { success: boolean; message: string } {
+  const db = getDatabase()
+
+  if (!db.doctors) {
+    db.doctors = []
+    return { success: false, message: "Doctor not found" }
+  }
+
+  const doctorIndex = db.doctors.findIndex((doctor) => doctor.id === id)
+
+  if (doctorIndex === -1) {
+    return { success: false, message: "Doctor not found" }
+  }
+
+  // Verify current password
+  if (db.doctors[doctorIndex].password !== currentPassword) {
+    return { success: false, message: "Current password is incorrect" }
+  }
+
+  // Update the password
+  db.doctors[doctorIndex] = {
+    ...db.doctors[doctorIndex],
+    password: newPassword,
+    updatedAt: new Date().toISOString(),
+  }
+
+  saveDatabase(db)
+
+  return { success: true, message: "Password updated successfully" }
 }
 
 export function updateDoctorLoginTime(id: string): Doctor | null {

@@ -114,6 +114,7 @@ export async function requestOTP(email: string) {
       success: true,
       message: "OTP sent successfully",
       otp: otp, // Always include OTP for easier testing
+      devMode: process.env.NODE_ENV !== "production",
     }
   } catch (error) {
     console.error("Error in requestOTP:", error)

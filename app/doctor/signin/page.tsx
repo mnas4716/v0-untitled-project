@@ -12,61 +12,45 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Logo } from "@/components/logo"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { Eye, EyeOff } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function DoctorSignInPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
-  const [otp, setOtp] = useState("")
-  const [step, setStep] = useState(1)
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const handleRequestOTP = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
     try {
-      // In a real app, this would call an API to send an OTP
-      // For demo purposes, we'll just simulate it
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Hardcoded credentials check
+      if (email === "doc1@freedoc.com.au" && password === "test123") {
+        // Create a mock doctor user
+        const doctorUser = {
+          id: "doc1",
+          email,
+          firstName: "Robert",
+          lastName: "Smith",
+          role: "doctor",
+          specialty: "General Practice",
+        }
 
-      // Move to OTP verification step
-      setStep(2)
-    } catch (error) {
-      setError("Failed to send OTP. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+        // Store in localStorage
+        localStorage.setItem("doctorUser", JSON.stringify(doctorUser))
 
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
-
-    try {
-      // In a real app, this would call an API to verify the OTP
-      // For demo purposes, we'll just simulate it
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Create a mock doctor user
-      const doctorUser = {
-        id: "d1",
-        email,
-        firstName: "John",
-        lastName: "Smith",
-        role: "doctor",
-        specialty: "General Practice",
+        // Redirect to dashboard
+        router.push("/doctor/dashboard")
+      } else {
+        setError("Invalid email or password. Please try again.")
       }
-
-      // Store in localStorage
-      localStorage.setItem("doctorUser", JSON.stringify(doctorUser))
-
-      // Redirect to dashboard
-      router.push("/doctor/dashboard")
     } catch (error) {
-      setError("Invalid OTP. Please try again.")
+      setError("An error occurred during sign in. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -84,60 +68,56 @@ export default function DoctorSignInPage() {
                 <Logo className="h-12 w-12" />
               </div>
               <CardTitle className="text-2xl font-bold">Doctor Portal</CardTitle>
-              <CardDescription>
-                {step === 1 ? "Enter your email to sign in" : "Enter the verification code sent to your email"}
-              </CardDescription>
+              <CardDescription>Sign in to access your doctor dashboard</CardDescription>
             </CardHeader>
             <CardContent>
-              {error && <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm">{error}</div>}
+              {error && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-              {step === 1 ? (
-                <form onSubmit={handleRequestOTP}>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="doctor@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Sending..." : "Continue"}
-                    </Button>
+              <form onSubmit={handleSignIn}>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="doctor@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
                   </div>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyOTP}>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="otp">Verification Code</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
                       <Input
-                        id="otp"
-                        placeholder="Enter 6-digit code"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         required
                       />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Verifying..." : "Sign In"}
-                    </Button>
-                    <div className="text-center">
                       <Button
-                        variant="link"
-                        className="text-sm text-slate-500 hover:text-slate-700"
-                        onClick={() => setStep(1)}
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowPassword(!showPassword)}
                       >
-                        Back to email
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
                       </Button>
                     </div>
                   </div>
-                </form>
-              )}
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Sign In"}
+                  </Button>
+                </div>
+              </form>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <div className="text-center text-sm text-slate-500">

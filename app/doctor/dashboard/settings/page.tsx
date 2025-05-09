@@ -13,10 +13,11 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const passwordSchema = z
   .object({
-    currentPassword: z.string().min(8, "Password must be at least 8 characters"),
+    currentPassword: z.string().min(1, "Current password is required"),
     newPassword: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
   })
@@ -26,11 +27,12 @@ const passwordSchema = z
   })
 
 export default function DoctorSettings() {
-  const [doctor, setDoctor] = useState<{ name: string; email: string } | null>(null)
+  const [doctor, setDoctor] = useState<{ firstName?: string; lastName?: string; email?: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [error, setError] = useState("")
   const router = useRouter()
   const { toast } = useToast()
 
@@ -55,8 +57,9 @@ export default function DoctorSettings() {
 
         const parsedData = JSON.parse(doctorData)
         setDoctor({
-          name: parsedData.name || "Dr. Jane Smith",
-          email: parsedData.email || "jane.smith@example.com",
+          firstName: parsedData.firstName || "Robert",
+          lastName: parsedData.lastName || "Smith",
+          email: parsedData.email || "doc1@freedoc.com.au",
         })
       } catch (error) {
         console.error("Error fetching doctor data:", error)
@@ -75,11 +78,27 @@ export default function DoctorSettings() {
 
   const onSubmit = async (values: z.infer<typeof passwordSchema>) => {
     try {
+      setError("")
+      // Check if current password is correct (hardcoded for demo)
+      if (values.currentPassword !== "test123") {
+        setError("Current password is incorrect")
+        return
+      }
+
       // In a real app, you would send this data to your API
       console.log("Password change requested:", values)
 
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Update the password in localStorage (for demo purposes)
+      const doctorData = localStorage.getItem("doctorUser")
+      if (doctorData) {
+        const parsedData = JSON.parse(doctorData)
+        // In a real app, you would hash the password
+        parsedData.password = values.newPassword
+        localStorage.setItem("doctorUser", JSON.stringify(parsedData))
+      }
 
       toast({
         title: "Success",
@@ -131,7 +150,9 @@ export default function DoctorSettings() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <h3 className="text-sm font-medium">Name</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{doctor?.name}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {doctor?.firstName} {doctor?.lastName}
+                  </p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium">Email</h3>
@@ -150,6 +171,12 @@ export default function DoctorSettings() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
+                {error && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
                 <FormField
                   control={form.control}
                   name="currentPassword"
