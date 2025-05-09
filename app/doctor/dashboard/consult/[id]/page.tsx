@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getConsultRequestById, updateConsultRequest } from "@/lib/database-service"
 
 // Define the consultation type
 interface Consultation {
@@ -41,7 +42,9 @@ interface Consultation {
   type: string
   createdAt: string
   completedAt?: string
+  cancelledAt?: string
   notes?: string
+  doctorNotes?: string
   patientHistory?: PatientHistory
 }
 
@@ -69,10 +72,13 @@ export default function ConsultPage() {
   const [consultation, setConsultation] = useState<Consultation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notes, setNotes] = useState("")
+  const [doctorNotes, setDoctorNotes] = useState("")
   const [diagnosis, setDiagnosis] = useState("")
   const [isMedCertDialogOpen, setIsMedCertDialogOpen] = useState(false)
   const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] = useState(false)
   const [isReferralDialogOpen, setIsReferralDialogOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   // Mock patient history data
   const mockPatientHistory: PatientHistory = {
@@ -110,28 +116,17 @@ export default function ConsultPage() {
       try {
         if (typeof window !== "undefined") {
           // Get consultations from localStorage
-          const storedConsultations = localStorage.getItem("consultations")
-          let consultations: Consultation[] = []
+          const consultRequest = getConsultRequestById(id as string)
 
-          if (storedConsultations) {
-            try {
-              consultations = JSON.parse(storedConsultations)
-              const foundConsultation = consultations.find((c) => c.id === id)
-
-              if (foundConsultation && isMounted) {
-                // Add mock patient history to the consultation
-                foundConsultation.patientHistory = mockPatientHistory
-                setConsultation(foundConsultation)
-                setNotes(foundConsultation.notes || "")
-              } else if (isMounted) {
-                router.push("/doctor/dashboard")
-              }
-            } catch (error) {
-              console.error("Error parsing consultations data:", error)
-              if (isMounted) {
-                router.push("/doctor/dashboard")
-              }
+          if (consultRequest && isMounted) {
+            // Add mock patient history to the consultation
+            const consultationWithHistory = {
+              ...consultRequest,
+              patientHistory: mockPatientHistory,
             }
+            setConsultation(consultationWithHistory)
+            setNotes(consultationWithHistory.notes || "")
+            setDoctorNotes(consultationWithHistory.doctorNotes || "")
           } else if (isMounted) {
             router.push("/doctor/dashboard")
           }
@@ -184,39 +179,74 @@ export default function ConsultPage() {
     }
   }, [consultation, notes])
 
-  // Complete consultation
-  const completeConsultation = useCallback(() => {
+  // Save doctor notes
+  const saveDoctorNotes = useCallback(async () => {
     if (!consultation) return
 
-    try {
-      if (typeof window !== "undefined") {
-        const storedConsultations = localStorage.getItem("consultations")
+    setIsSaving(true)
+    setSaveSuccess(false)
 
+    try {
+      // Update the consultation with doctor notes
+      const result = updateConsultRequest(consultation.id, { doctorNotes })
+
+      if (result) {
+        // Update local state
+        setConsultation({ ...consultation, doctorNotes })
+        setSaveSuccess(true)
+
+        // Also update in localStorage for immediate visibility
+        const storedConsultations = localStorage.getItem("consultations")
         if (storedConsultations) {
-          const consultations: Consultation[] = JSON.parse(storedConsultations)
+          const consultations = JSON.parse(storedConsultations)
           const updatedConsultations = consultations.map((c) => {
             if (c.id === consultation.id) {
-              return {
-                ...c,
-                status: "completed",
-                completedAt: new Date().toISOString(),
-                notes,
-              }
+              return { ...c, doctorNotes }
             }
             return c
           })
-
           localStorage.setItem("consultations", JSON.stringify(updatedConsultations))
-
-          // Redirect to dashboard
-          router.push("/doctor/dashboard")
         }
+
+        // Reset success message after 3 seconds
+        setTimeout(() => {
+          setSaveSuccess(false)
+        }, 3000)
+      }
+    } catch (error) {
+      console.error("Error saving doctor notes:", error)
+      alert("Failed to save doctor notes")
+    } finally {
+      setIsSaving(false)
+    }
+  }, [consultation, doctorNotes])
+
+  // Complete consultation
+  const completeConsultation = useCallback(async () => {
+    if (!consultation) return
+
+    try {
+      // First save any unsaved doctor notes
+      if (doctorNotes !== consultation.doctorNotes) {
+        await updateConsultRequest(consultation.id, { doctorNotes })
+      }
+
+      // Then mark as completed
+      const result = await updateConsultRequest(consultation.id, {
+        status: "completed",
+        completedAt: new Date().toISOString(),
+        doctorNotes,
+      })
+
+      if (result) {
+        // Redirect to dashboard
+        router.push("/doctor/dashboard")
       }
     } catch (error) {
       console.error("Error completing consultation:", error)
       alert("Failed to complete consultation")
     }
-  }, [consultation, notes, router])
+  }, [consultation, doctorNotes, router])
 
   // Get consultation type badge
   const getConsultationTypeBadge = useCallback((type: string) => {
@@ -263,9 +293,30 @@ export default function ConsultPage() {
             <Printer className="mr-2 h-4 w-4" />
             Print
           </Button>
-          <Button onClick={completeConsultation}>Complete Consultation</Button>
+          <Button
+            onClick={completeConsultation}
+            disabled={consultation.status === "completed" || consultation.status === "cancelled"}
+          >
+            Complete Consultation
+          </Button>
         </div>
       </div>
+
+      {consultation.status === "cancelled" && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+          <p className="font-medium">This consultation has been cancelled</p>
+          {consultation.cancelReason && <p className="text-sm mt-1">Reason: {consultation.cancelReason}</p>}
+        </div>
+      )}
+
+      {consultation.status === "completed" && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md mb-4">
+          <p className="font-medium">This consultation has been completed</p>
+          {consultation.completedAt && (
+            <p className="text-sm mt-1">Completed on: {new Date(consultation.completedAt).toLocaleString()}</p>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Patient Information */}
@@ -369,6 +420,7 @@ export default function ConsultPage() {
             <Tabs defaultValue="notes">
               <TabsList className="mb-4">
                 <TabsTrigger value="notes">Clinical Notes</TabsTrigger>
+                <TabsTrigger value="doctor-notes">Doctor Notes</TabsTrigger>
                 <TabsTrigger value="history">Past Consultations</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
               </TabsList>
@@ -399,6 +451,33 @@ export default function ConsultPage() {
                   <Button onClick={saveNotes}>
                     <Save className="mr-2 h-4 w-4" />
                     Save Notes
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="doctor-notes" className="space-y-4">
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                  <p className="text-sm text-yellow-700">
+                    <strong>Note:</strong> These notes are for internal use only and will never be visible to patients.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="doctorNotes">Doctor Notes (Internal Only)</Label>
+                  <Textarea
+                    id="doctorNotes"
+                    placeholder="Enter confidential notes about this patient or consultation..."
+                    className="min-h-[200px]"
+                    value={doctorNotes}
+                    onChange={(e) => setDoctorNotes(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex justify-end items-center gap-4">
+                  {saveSuccess && <p className="text-sm text-green-600">Notes saved successfully!</p>}
+                  <Button onClick={saveDoctorNotes} disabled={isSaving}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {isSaving ? "Saving..." : "Save Doctor Notes"}
                   </Button>
                 </div>
               </TabsContent>
@@ -448,7 +527,7 @@ export default function ConsultPage() {
                     <CardFooter>
                       <Dialog open={isMedCertDialogOpen} onOpenChange={setIsMedCertDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" className="w-full">
+                          <Button variant="outline" className="w-full" disabled={consultation.status !== "pending"}>
                             <ClipboardList className="mr-2 h-4 w-4" />
                             Create Certificate
                           </Button>
@@ -509,7 +588,7 @@ export default function ConsultPage() {
                     <CardFooter>
                       <Dialog open={isPrescriptionDialogOpen} onOpenChange={setIsPrescriptionDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" className="w-full">
+                          <Button variant="outline" className="w-full" disabled={consultation.status !== "pending"}>
                             <FileText className="mr-2 h-4 w-4" />
                             Create Prescription
                           </Button>
@@ -573,7 +652,7 @@ export default function ConsultPage() {
                     <CardFooter>
                       <Dialog open={isReferralDialogOpen} onOpenChange={setIsReferralDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" className="w-full">
+                          <Button variant="outline" className="w-full" disabled={consultation.status !== "pending"}>
                             <Share2 className="mr-2 h-4 w-4" />
                             Create Referral
                           </Button>
@@ -650,7 +729,7 @@ export default function ConsultPage() {
                       <p className="text-sm text-slate-500">Request laboratory tests</p>
                     </CardContent>
                     <CardFooter>
-                      <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full" disabled={consultation.status !== "pending"}>
                         <Download className="mr-2 h-4 w-4" />
                         Create Lab Request
                       </Button>

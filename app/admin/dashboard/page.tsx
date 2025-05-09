@@ -4,9 +4,11 @@ import { useState, useEffect, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar, Users, Stethoscope, FileText, CheckCircle, Search } from "lucide-react"
+import { Calendar, Users, Stethoscope, FileText, Search, Info, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { cancelConsultRequest } from "@/lib/database-service"
+import Link from "next/link"
 
 // Define the consultation type
 interface Consultation {
@@ -21,11 +23,13 @@ interface Consultation {
   type: string
   createdAt: string
   completedAt?: string
+  doctorNotes?: string
 }
 
 export default function AdminDashboardPage() {
   const [activeConsultations, setActiveConsultations] = useState<Consultation[]>([])
   const [completedConsultations, setCompletedConsultations] = useState<Consultation[]>([])
+  const [cancelledConsultations, setCancelledConsultations] = useState<Consultation[]>([])
   const [adminUser, setAdminUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
@@ -128,9 +132,10 @@ export default function AdminDashboardPage() {
             localStorage.setItem("consultations", JSON.stringify(consultations))
           }
 
-          // Split into active and completed
+          // Split into active, completed, and cancelled
           setActiveConsultations(consultations.filter((c) => c.status === "pending"))
           setCompletedConsultations(consultations.filter((c) => c.status === "completed"))
+          setCancelledConsultations(consultations.filter((c) => c.status === "cancelled"))
         }
       } catch (error) {
         console.error("Error loading consultations:", error)
@@ -142,28 +147,40 @@ export default function AdminDashboardPage() {
     loadConsultations()
   }, [])
 
-  // Function to handle marking a consultation as completed
-  const handleMarkAsCompleted = (consultationId: string) => {
-    const consultation = activeConsultations.find((c) => c.id === consultationId)
-    if (consultation) {
-      // Update the consultation
-      const updatedConsultation = {
-        ...consultation,
-        status: "completed",
-        completedAt: new Date().toISOString(),
+  // Function to handle cancelling a consultation
+  const handleCancelConsultation = (consultationId: string) => {
+    // Confirm before cancelling
+    if (!window.confirm("Are you sure you want to cancel this consultation?")) {
+      return
+    }
+
+    try {
+      // Cancel the consultation in the database
+      const result = cancelConsultRequest(consultationId, "Cancelled by admin")
+
+      if (result) {
+        // Update the local state
+        const consultation = activeConsultations.find((c) => c.id === consultationId)
+        if (consultation) {
+          // Remove from active and add to cancelled
+          const newActiveConsultations = activeConsultations.filter((c) => c.id !== consultationId)
+          const newCancelledConsultations = [
+            { ...consultation, status: "cancelled", cancelledAt: new Date().toISOString() },
+            ...cancelledConsultations,
+          ]
+
+          // Update state
+          setActiveConsultations(newActiveConsultations)
+          setCancelledConsultations(newCancelledConsultations)
+
+          // Update localStorage
+          const allConsultations = [...newActiveConsultations, ...completedConsultations, ...newCancelledConsultations]
+          localStorage.setItem("consultations", JSON.stringify(allConsultations))
+        }
       }
-
-      // Remove from active and add to completed
-      const newActiveConsultations = activeConsultations.filter((c) => c.id !== consultationId)
-      const newCompletedConsultations = [updatedConsultation, ...completedConsultations]
-
-      // Update state
-      setActiveConsultations(newActiveConsultations)
-      setCompletedConsultations(newCompletedConsultations)
-
-      // Update localStorage
-      const allConsultations = [...newActiveConsultations, ...newCompletedConsultations]
-      localStorage.setItem("consultations", JSON.stringify(allConsultations))
+    } catch (error) {
+      console.error("Error cancelling consultation:", error)
+      alert("Failed to cancel consultation")
     }
   }
 
@@ -186,6 +203,15 @@ export default function AdminDashboardPage() {
     )
   }, [completedConsultations, searchTerm])
 
+  const filteredCancelledConsultations = useMemo(() => {
+    return cancelledConsultations.filter(
+      (c) =>
+        c.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.reason.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
+  }, [cancelledConsultations, searchTerm])
+
   // Get consultation type badge
   const getConsultationTypeBadge = (type: string) => {
     switch (type) {
@@ -201,7 +227,7 @@ export default function AdminDashboardPage() {
   }
 
   // Calculate stats once
-  const totalConsultations = activeConsultations.length + completedConsultations.length
+  const totalConsultations = activeConsultations.length + completedConsultations.length + cancelledConsultations.length
   const completionRate =
     totalConsultations > 0 ? Math.round((completedConsultations.length / totalConsultations) * 100) : 0
 
@@ -276,6 +302,7 @@ export default function AdminDashboardPage() {
         <TabsList>
           <TabsTrigger value="active">Active Consultations</TabsTrigger>
           <TabsTrigger value="completed">Completed Consultations</TabsTrigger>
+          <TabsTrigger value="cancelled">Cancelled Consultations</TabsTrigger>
           <TabsTrigger value="all">All Consultations</TabsTrigger>
         </TabsList>
 
@@ -323,9 +350,20 @@ export default function AdminDashboardPage() {
                         </p>
                       </div>
                       <div className="mt-4 flex justify-end space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleMarkAsCompleted(consultation.id)}>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Mark as Completed
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => handleCancelConsultation(consultation.id)}
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Cancel
+                        </Button>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/admin/dashboard/consult/${consultation.id}`}>
+                            <Info className="mr-2 h-4 w-4" />
+                            See Info
+                          </Link>
                         </Button>
                       </div>
                     </div>
@@ -377,6 +415,78 @@ export default function AdminDashboardPage() {
                           Completed:{" "}
                           {consultation.completedAt ? new Date(consultation.completedAt).toLocaleString() : "Unknown"}
                         </p>
+                        {consultation.doctorNotes && (
+                          <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                            <p className="text-sm font-medium text-blue-800">Doctor Notes:</p>
+                            <p className="text-sm text-blue-700">{consultation.doctorNotes}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-4 flex justify-end space-x-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/admin/dashboard/consult/${consultation.id}`}>
+                            <Info className="mr-2 h-4 w-4" />
+                            See Info
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="cancelled" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cancelled Consultations</CardTitle>
+              <CardDescription>View consultations that have been cancelled.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-6">Loading consultations...</div>
+              ) : filteredCancelledConsultations.length === 0 ? (
+                <div className="text-center py-6 text-slate-500">No cancelled consultations</div>
+              ) : (
+                <div className="space-y-6">
+                  {filteredCancelledConsultations.map((consultation) => (
+                    <div key={consultation.id} className="border rounded-lg p-4 bg-white">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium">{consultation.patientName}</h3>
+                            {getConsultationTypeBadge(consultation.type)}
+                          </div>
+                          <p className="text-sm text-slate-500">{consultation.email}</p>
+                          <p className="text-sm text-slate-500">{consultation.phone}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">
+                            {consultation.date} at {consultation.time}
+                          </p>
+                          <span className="inline-block mt-1 px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                            Cancelled
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-sm text-slate-600">
+                          <span className="font-medium">Reason:</span> {consultation.reason}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Cancelled:{" "}
+                          {consultation.cancelledAt ? new Date(consultation.cancelledAt).toLocaleString() : "Unknown"}
+                        </p>
+                      </div>
+                      <div className="mt-4 flex justify-end space-x-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/admin/dashboard/consult/${consultation.id}`}>
+                            <Info className="mr-2 h-4 w-4" />
+                            See Info
+                          </Link>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -395,11 +505,17 @@ export default function AdminDashboardPage() {
             <CardContent>
               {isLoading ? (
                 <div className="text-center py-6">Loading consultations...</div>
-              ) : filteredActiveConsultations.length === 0 && filteredCompletedConsultations.length === 0 ? (
+              ) : filteredActiveConsultations.length === 0 &&
+                filteredCompletedConsultations.length === 0 &&
+                filteredCancelledConsultations.length === 0 ? (
                 <div className="text-center py-6 text-slate-500">No consultations found</div>
               ) : (
                 <div className="space-y-6">
-                  {[...filteredActiveConsultations, ...filteredCompletedConsultations]
+                  {[
+                    ...filteredActiveConsultations,
+                    ...filteredCompletedConsultations,
+                    ...filteredCancelledConsultations,
+                  ]
                     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                     .map((consultation) => (
                       <div key={consultation.id} className="border rounded-lg p-4 bg-white">
@@ -420,10 +536,16 @@ export default function AdminDashboardPage() {
                               className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
                                 consultation.status === "pending"
                                   ? "bg-amber-100 text-amber-800"
-                                  : "bg-green-100 text-green-800"
+                                  : consultation.status === "completed"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
                               }`}
                             >
-                              {consultation.status === "pending" ? "Pending" : "Completed"}
+                              {consultation.status === "pending"
+                                ? "Pending"
+                                : consultation.status === "completed"
+                                  ? "Completed"
+                                  : "Cancelled"}
                             </span>
                           </div>
                         </div>
@@ -439,15 +561,37 @@ export default function AdminDashboardPage() {
                               Completed: {new Date(consultation.completedAt).toLocaleString()}
                             </p>
                           )}
+                          {consultation.cancelledAt && (
+                            <p className="text-xs text-slate-400 mt-1">
+                              Cancelled: {new Date(consultation.cancelledAt).toLocaleString()}
+                            </p>
+                          )}
+                          {consultation.doctorNotes && consultation.status === "completed" && (
+                            <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                              <p className="text-sm font-medium text-blue-800">Doctor Notes:</p>
+                              <p className="text-sm text-blue-700">{consultation.doctorNotes}</p>
+                            </div>
+                          )}
                         </div>
-                        {consultation.status === "pending" && (
-                          <div className="mt-4 flex justify-end space-x-2">
-                            <Button variant="outline" size="sm" onClick={() => handleMarkAsCompleted(consultation.id)}>
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Mark as Completed
+                        <div className="mt-4 flex justify-end space-x-2">
+                          {consultation.status === "pending" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 border-red-200 hover:bg-red-50"
+                              onClick={() => handleCancelConsultation(consultation.id)}
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              Cancel
                             </Button>
-                          </div>
-                        )}
+                          )}
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/admin/dashboard/consult/${consultation.id}`}>
+                              <Info className="mr-2 h-4 w-4" />
+                              See Info
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     ))}
                 </div>

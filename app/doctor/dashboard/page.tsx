@@ -6,11 +6,12 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, Search, FileText, ClipboardList } from "lucide-react"
+import { Calendar, Clock, Search, FileText, ClipboardList, Info, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { getAllConsultRequests } from "@/lib/database-service"
+import { getAllConsultRequests, cancelConsultRequest } from "@/lib/database-service"
+import Link from "next/link"
 
 // Define the consultation type
 interface Consultation {
@@ -25,7 +26,9 @@ interface Consultation {
   type: string
   createdAt: string
   completedAt?: string
+  cancelledAt?: string
   details?: any
+  doctorNotes?: string
 }
 
 export default function DoctorDashboardPage() {
@@ -87,6 +90,31 @@ export default function DoctorDashboardPage() {
 
     return () => clearTimeout(timeoutId)
   }, [])
+
+  // Handle cancelling a consultation
+  const handleCancelConsultation = (id: string) => {
+    // Confirm before cancelling
+    if (!window.confirm("Are you sure you want to cancel this consultation?")) {
+      return
+    }
+
+    try {
+      // Cancel the consultation in the database
+      const result = cancelConsultRequest(id, "Cancelled by doctor")
+
+      if (result) {
+        // Update the local state
+        setConsultations((prevConsultations) =>
+          prevConsultations.map((c) =>
+            c.id === id ? { ...c, status: "cancelled", cancelledAt: new Date().toISOString() } : c,
+          ),
+        )
+      }
+    } catch (error) {
+      console.error("Error cancelling consultation:", error)
+      alert("Failed to cancel consultation")
+    }
+  }
 
   // Filter consultations based on search term and status
   const pendingConsultations = useMemo(() => {
@@ -309,9 +337,17 @@ export default function DoctorDashboardPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => (window.location.href = `/doctor/dashboard/consult/${consultation.id}`)}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => handleCancelConsultation(consultation.id)}
                         >
-                          View Details
+                          <X className="mr-2 h-4 w-4" />
+                          Cancel
+                        </Button>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/doctor/dashboard/consult/${consultation.id}`}>
+                            <Info className="mr-2 h-4 w-4" />
+                            See Info
+                          </Link>
                         </Button>
                       </div>
                     </div>
@@ -366,13 +402,20 @@ export default function DoctorDashboardPage() {
                           <span className="font-medium">Reason:</span> {consultation.reason}
                         </p>
                       </div>
+
+                      {consultation.doctorNotes && (
+                        <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                          <p className="text-sm font-medium text-blue-800">Doctor Notes:</p>
+                          <p className="text-sm text-blue-700">{consultation.doctorNotes}</p>
+                        </div>
+                      )}
+
                       <div className="mt-4 flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => (window.location.href = `/doctor/dashboard/consult/${consultation.id}`)}
-                        >
-                          View Details
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/doctor/dashboard/consult/${consultation.id}`}>
+                            <Info className="mr-2 h-4 w-4" />
+                            See Info
+                          </Link>
                         </Button>
                       </div>
                     </div>
@@ -411,6 +454,12 @@ export default function DoctorDashboardPage() {
                           <p className="text-sm text-slate-500">{consultation.phone}</p>
                         </div>
                         <div className="text-right">
+                          <p className="text-sm font-medium">
+                            Cancelled:{" "}
+                            {consultation.cancelledAt
+                              ? new Date(consultation.cancelledAt).toLocaleDateString()
+                              : "Unknown"}
+                          </p>
                           <span className="inline-block mt-1 px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
                             Cancelled
                           </span>
@@ -422,12 +471,11 @@ export default function DoctorDashboardPage() {
                         </p>
                       </div>
                       <div className="mt-4 flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => (window.location.href = `/doctor/dashboard/consult/${consultation.id}`)}
-                        >
-                          View Details
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/doctor/dashboard/consult/${consultation.id}`}>
+                            <Info className="mr-2 h-4 w-4" />
+                            See Info
+                          </Link>
                         </Button>
                       </div>
                     </div>

@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getAllConsultRequests, markConsultRequestAsCompleted } from "@/lib/database-service"
-import { FileText, Calendar, Clock } from "lucide-react"
+import { cancelConsultRequest } from "@/lib/database-service"
+import { FileText, Calendar, Clock, Info, X } from "lucide-react"
+import Link from "next/link"
 
 interface Consultation {
   id: string
@@ -20,6 +21,7 @@ interface Consultation {
   type: string
   createdAt: string
   details: any
+  doctorNotes?: string
 }
 
 export default function ConsultationsPage() {
@@ -28,8 +30,19 @@ export default function ConsultationsPage() {
 
   useEffect(() => {
     const fetchConsultations = () => {
-      const allConsultations = getAllConsultRequests()
-      setConsultations(allConsultations)
+      try {
+        // Get consultations from localStorage
+        const storedConsultations = localStorage.getItem("consultations")
+        if (storedConsultations) {
+          const parsedConsultations = JSON.parse(storedConsultations)
+          setConsultations(parsedConsultations)
+        } else {
+          setConsultations([])
+        }
+      } catch (error) {
+        console.error("Error fetching consultations:", error)
+        setConsultations([])
+      }
     }
 
     fetchConsultations()
@@ -39,9 +52,28 @@ export default function ConsultationsPage() {
     return () => clearInterval(intervalId)
   }, [])
 
-  const handleMarkAsCompleted = (id: string) => {
-    markConsultRequestAsCompleted(id)
-    setConsultations(getAllConsultRequests())
+  const handleCancelConsultation = (id: string) => {
+    // Confirm before cancelling
+    if (!window.confirm("Are you sure you want to cancel this consultation?")) {
+      return
+    }
+
+    try {
+      // Cancel the consultation in the database
+      const result = cancelConsultRequest(id, "Cancelled by admin")
+
+      if (result) {
+        // Update the local state
+        setConsultations((prevConsultations) =>
+          prevConsultations.map((c) =>
+            c.id === id ? { ...c, status: "cancelled", cancelledAt: new Date().toISOString() } : c,
+          ),
+        )
+      }
+    } catch (error) {
+      console.error("Error cancelling consultation:", error)
+      alert("Failed to cancel consultation")
+    }
   }
 
   const pendingConsultations = consultations.filter((c) => c.status === "pending")
@@ -87,7 +119,7 @@ export default function ConsultationsPage() {
               <ConsultationCard
                 key={consultation.id}
                 consultation={consultation}
-                onMarkAsCompleted={handleMarkAsCompleted}
+                onCancelConsultation={handleCancelConsultation}
               />
             ))
           )}
@@ -105,7 +137,7 @@ export default function ConsultationsPage() {
               <ConsultationCard
                 key={consultation.id}
                 consultation={consultation}
-                onMarkAsCompleted={handleMarkAsCompleted}
+                onCancelConsultation={handleCancelConsultation}
               />
             ))
           )}
@@ -123,7 +155,7 @@ export default function ConsultationsPage() {
               <ConsultationCard
                 key={consultation.id}
                 consultation={consultation}
-                onMarkAsCompleted={handleMarkAsCompleted}
+                onCancelConsultation={handleCancelConsultation}
               />
             ))
           )}
@@ -141,7 +173,7 @@ export default function ConsultationsPage() {
               <ConsultationCard
                 key={consultation.id}
                 consultation={consultation}
-                onMarkAsCompleted={handleMarkAsCompleted}
+                onCancelConsultation={handleCancelConsultation}
               />
             ))
           )}
@@ -153,10 +185,10 @@ export default function ConsultationsPage() {
 
 function ConsultationCard({
   consultation,
-  onMarkAsCompleted,
+  onCancelConsultation,
 }: {
   consultation: Consultation
-  onMarkAsCompleted: (id: string) => void
+  onCancelConsultation: (id: string) => void
 }) {
   const formattedDate = new Date(consultation.createdAt).toLocaleString()
 
@@ -264,16 +296,37 @@ function ConsultationCard({
             </div>
           )}
 
+          {consultation.doctorNotes && consultation.status === "completed" && (
+            <div className="mt-2 p-2 bg-blue-50 rounded-md">
+              <p className="text-sm font-medium text-blue-800">Doctor Notes:</p>
+              <p className="text-sm text-blue-700">{consultation.doctorNotes}</p>
+            </div>
+          )}
+
           <div>
             <p className="text-sm font-medium">Submitted</p>
             <p className="text-sm text-muted-foreground">{formattedDate}</p>
           </div>
 
-          {consultation.status === "pending" && (
-            <Button className="mt-2" onClick={() => onMarkAsCompleted(consultation.id)}>
-              Mark as Completed
+          <div className="mt-4 flex justify-end space-x-2">
+            {consultation.status === "pending" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600 border-red-200 hover:bg-red-50"
+                onClick={() => onCancelConsultation(consultation.id)}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
+            )}
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/admin/dashboard/consult/${consultation.id}`}>
+                <Info className="mr-2 h-4 w-4" />
+                See Info
+              </Link>
             </Button>
-          )}
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -12,6 +12,7 @@ export interface User {
   createdAt: string
   updatedAt: string
   lastLogin?: string
+  role?: string
 }
 
 export interface ConsultRequest {
@@ -31,6 +32,7 @@ export interface ConsultRequest {
   phone: string
   details: any
   notes?: string
+  doctorNotes?: string
 }
 
 // Add Doctor type
@@ -72,6 +74,7 @@ export function initDatabase(): void {
             phone: "0412345678",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            role: "user",
           },
           {
             id: "user2",
@@ -82,6 +85,7 @@ export function initDatabase(): void {
             dob: "1985-06-15",
             createdAt: new Date(Date.now() - 86400000).toISOString(),
             updatedAt: new Date(Date.now() - 86400000).toISOString(),
+            role: "user",
           },
         ],
         consultRequests: [
@@ -126,6 +130,7 @@ export function initDatabase(): void {
               startDate: "2023-05-18",
               endDate: "2023-05-25",
             },
+            doctorNotes: "Patient has recovered well from flu. No complications observed.",
           },
           {
             id: "c3",
@@ -192,6 +197,7 @@ export function initDatabase(): void {
               startDate: "2023-05-10",
               endDate: "2023-05-17",
             },
+            doctorNotes: "Patient has acute lumbar strain. Recommended rest and physical therapy.",
           },
         ],
         doctors: [
@@ -629,8 +635,10 @@ function updateConsultationsLocalStorage(consultRequests: ConsultRequest[]): voi
       createdAt: req.createdAt,
       completedAt: req.completedAt,
       cancelledAt: req.cancelledAt,
+      cancelReason: req.cancelReason,
       details: req.details,
       notes: req.notes,
+      doctorNotes: req.doctorNotes,
     }))
 
     localStorage.setItem("consultations", JSON.stringify(consultations))
