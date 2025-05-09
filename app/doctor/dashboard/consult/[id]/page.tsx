@@ -1,745 +1,327 @@
-// Optimize the consultation page for better performance
-
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  FileText,
-  ClipboardList,
-  Phone,
-  Video,
-  ArrowLeft,
-  Save,
-  Printer,
-  Download,
-  Share2,
-  MessageSquare,
-} from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getConsultRequestById, updateConsultRequest } from "@/lib/database-service"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getConsultRequestById, updateConsultRequest, markConsultRequestAsCompleted } from "@/lib/database-service"
+import { useToast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
-// Define the consultation type
-interface Consultation {
-  id: string
-  patientName: string
-  email: string
-  phone: string
-  date: string
-  time: string
-  reason: string
-  status: string
-  type: string
-  createdAt: string
-  completedAt?: string
-  cancelledAt?: string
-  notes?: string
-  doctorNotes?: string
-  patientHistory?: PatientHistory
-}
-
-interface PatientHistory {
-  allergies: string[]
-  medications: string[]
-  conditions: string[]
-  pastConsultations: PastConsultation[]
-}
-
-interface PastConsultation {
-  id: string
-  date: string
-  reason: string
-  diagnosis: string
-  treatment: string
-  doctor: string
-}
-
-export default function ConsultPage() {
-  const params = useParams()
+export default function ConsultDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const { id } = params
-
-  const [consultation, setConsultation] = useState<Consultation | null>(null)
+  const { toast } = useToast()
+  const [doctor, setDoctor] = useState<any>(null)
+  const [consultation, setConsultation] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [notes, setNotes] = useState("")
   const [doctorNotes, setDoctorNotes] = useState("")
-  const [diagnosis, setDiagnosis] = useState("")
-  const [isMedCertDialogOpen, setIsMedCertDialogOpen] = useState(false)
-  const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] = useState(false)
-  const [isReferralDialogOpen, setIsReferralDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Mock patient history data
-  const mockPatientHistory: PatientHistory = {
-    allergies: ["Penicillin", "Peanuts"],
-    medications: ["Lisinopril 10mg daily", "Metformin 500mg twice daily"],
-    conditions: ["Hypertension", "Type 2 Diabetes"],
-    pastConsultations: [
-      {
-        id: "pc1",
-        date: "2023-03-15",
-        reason: "Annual checkup",
-        diagnosis: "Hypertension, well controlled",
-        treatment: "Continue current medications",
-        doctor: "Dr. Johnson",
-      },
-      {
-        id: "pc2",
-        date: "2023-01-10",
-        reason: "Flu symptoms",
-        diagnosis: "Seasonal influenza",
-        treatment: "Rest, fluids, acetaminophen for fever",
-        doctor: "Dr. Wilson",
-      },
-    ],
-  }
-
-  // Load consultation data
   useEffect(() => {
-    let isMounted = true
+    // Get doctor from localStorage
+    if (typeof window !== "undefined") {
+      const storedDoctor = localStorage.getItem("doctorUser")
+      if (!storedDoctor) {
+        router.push("/doctor/signin")
+        return
+      }
 
-    const loadConsultation = async () => {
-      if (!isMounted) return
-
-      setIsLoading(true)
       try {
-        if (typeof window !== "undefined") {
-          // Get consultations from localStorage
-          const consultRequest = getConsultRequestById(id as string)
+        const parsedDoctor = JSON.parse(storedDoctor)
+        setDoctor(parsedDoctor)
 
-          if (consultRequest && isMounted) {
-            // Add mock patient history to the consultation
-            const consultationWithHistory = {
-              ...consultRequest,
-              patientHistory: mockPatientHistory,
-            }
-            setConsultation(consultationWithHistory)
-            setNotes(consultationWithHistory.notes || "")
-            setDoctorNotes(consultationWithHistory.doctorNotes || "")
-          } else if (isMounted) {
-            router.push("/doctor/dashboard")
-          }
+        // Get consultation details
+        const consultationDetails = getConsultRequestById(params.id)
+        if (!consultationDetails) {
+          setError("Consultation not found")
+        } else {
+          setConsultation(consultationDetails)
+          setDoctorNotes(consultationDetails.doctorNotes || "")
         }
       } catch (error) {
         console.error("Error loading consultation:", error)
+        setError("Failed to load consultation details")
       } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
+        setIsLoading(false)
       }
     }
+  }, [params.id, router])
 
-    loadConsultation()
-
-    return () => {
-      isMounted = false
-    }
-  }, [id, router])
-
-  // Save consultation notes
-  const saveNotes = useCallback(() => {
-    if (!consultation) return
-
-    try {
-      if (typeof window !== "undefined") {
-        const storedConsultations = localStorage.getItem("consultations")
-
-        if (storedConsultations) {
-          const consultations: Consultation[] = JSON.parse(storedConsultations)
-          const updatedConsultations = consultations.map((c) => {
-            if (c.id === consultation.id) {
-              return { ...c, notes }
-            }
-            return c
-          })
-
-          localStorage.setItem("consultations", JSON.stringify(updatedConsultations))
-
-          // Update local state
-          setConsultation({ ...consultation, notes })
-
-          // Show success message
-          alert("Notes saved successfully")
-        }
-      }
-    } catch (error) {
-      console.error("Error saving notes:", error)
-      alert("Failed to save notes")
-    }
-  }, [consultation, notes])
-
-  // Save doctor notes
-  const saveDoctorNotes = useCallback(async () => {
+  const handleSaveNotes = async () => {
     if (!consultation) return
 
     setIsSaving(true)
-    setSaveSuccess(false)
-
     try {
-      // Update the consultation with doctor notes
-      const result = updateConsultRequest(consultation.id, { doctorNotes })
-
-      if (result) {
-        // Update local state
-        setConsultation({ ...consultation, doctorNotes })
-        setSaveSuccess(true)
-
-        // Also update in localStorage for immediate visibility
-        const storedConsultations = localStorage.getItem("consultations")
-        if (storedConsultations) {
-          const consultations = JSON.parse(storedConsultations)
-          const updatedConsultations = consultations.map((c) => {
-            if (c.id === consultation.id) {
-              return { ...c, doctorNotes }
-            }
-            return c
-          })
-          localStorage.setItem("consultations", JSON.stringify(updatedConsultations))
-        }
-
-        // Reset success message after 3 seconds
-        setTimeout(() => {
-          setSaveSuccess(false)
-        }, 3000)
-      }
-    } catch (error) {
-      console.error("Error saving doctor notes:", error)
-      alert("Failed to save doctor notes")
-    } finally {
-      setIsSaving(false)
-    }
-  }, [consultation, doctorNotes])
-
-  // Complete consultation
-  const completeConsultation = useCallback(async () => {
-    if (!consultation) return
-
-    try {
-      // First save any unsaved doctor notes
-      if (doctorNotes !== consultation.doctorNotes) {
-        await updateConsultRequest(consultation.id, { doctorNotes })
-      }
-
-      // Then mark as completed
-      const result = await updateConsultRequest(consultation.id, {
-        status: "completed",
-        completedAt: new Date().toISOString(),
+      const updatedConsultation = updateConsultRequest(consultation.id, {
         doctorNotes,
       })
 
-      if (result) {
-        // Redirect to dashboard
-        router.push("/doctor/dashboard")
+      if (updatedConsultation) {
+        setConsultation(updatedConsultation)
+        toast({
+          title: "Notes Saved",
+          description: "Your notes have been saved successfully.",
+        })
+      } else {
+        throw new Error("Failed to save notes")
+      }
+    } catch (error) {
+      console.error("Error saving notes:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save notes. Please try again.",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCompleteConsultation = async () => {
+    if (!consultation) return
+
+    if (consultation.status === "completed") {
+      toast({
+        title: "Already Completed",
+        description: "This consultation has already been marked as completed.",
+      })
+      return
+    }
+
+    setIsCompleting(true)
+    try {
+      // First save any unsaved notes
+      if (doctorNotes !== consultation.doctorNotes) {
+        await handleSaveNotes()
+      }
+
+      // Mark as completed
+      const completedConsultation = markConsultRequestAsCompleted(consultation.id)
+
+      if (completedConsultation) {
+        setConsultation(completedConsultation)
+        toast({
+          title: "Consultation Completed",
+          description: "The consultation has been marked as completed.",
+        })
+      } else {
+        throw new Error("Failed to complete consultation")
       }
     } catch (error) {
       console.error("Error completing consultation:", error)
-      alert("Failed to complete consultation")
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to complete consultation. Please try again.",
+      })
+    } finally {
+      setIsCompleting(false)
     }
-  }, [consultation, doctorNotes, router])
+  }
 
-  // Get consultation type badge
-  const getConsultationTypeBadge = useCallback((type: string) => {
-    switch (type) {
-      case "consultation":
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consultation</Badge>
-      case "medical-certificate":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Medical Certificate</Badge>
-      case "prescription":
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Prescription</Badge>
-      default:
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{type}</Badge>
-    }
-  }, [])
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p>Loading consultation...</p>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
-  if (!consultation) {
+  if (error || !consultation) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-red-500">Consultation not found</p>
-        <Button className="mt-4" onClick={() => router.push("/doctor/dashboard")}>
-          Return to Dashboard
-        </Button>
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <AlertDescription>{error || "Consultation not found"}</AlertDescription>
+        </Alert>
+        <div className="mt-4">
+          <Button asChild>
+            <Link href="/doctor/dashboard">Return to Dashboard</Link>
+          </Button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.push("/doctor/dashboard")} className="flex items-center">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Link href="/doctor/dashboard" className="text-blue-600 hover:underline">
+              ← Back to Dashboard
+            </Link>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Consultation Details</h1>
+          <div className="flex items-center gap-2 mt-2">
+            <Badge
+              className={
+                consultation.type === "consultation"
+                  ? "bg-blue-100 text-blue-800"
+                  : consultation.type === "medical-certificate"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-purple-100 text-purple-800"
+              }
+            >
+              {consultation.type.replace("-", " ")}
+            </Badge>
+            {consultation.status === "pending" ? (
+              <Badge className="bg-amber-100 text-amber-800">Pending</Badge>
+            ) : consultation.status === "completed" ? (
+              <Badge className="bg-green-100 text-green-800">Completed</Badge>
+            ) : (
+              <Badge className="bg-red-100 text-red-800">Cancelled</Badge>
+            )}
+          </div>
+        </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print
-          </Button>
-          <Button
-            onClick={completeConsultation}
-            disabled={consultation.status === "completed" || consultation.status === "cancelled"}
-          >
-            Complete Consultation
-          </Button>
+          {consultation.status === "pending" && (
+            <Button onClick={handleCompleteConsultation} disabled={isCompleting}>
+              {isCompleting ? "Completing..." : "Mark as Completed"}
+            </Button>
+          )}
         </div>
       </div>
 
-      {consultation.status === "cancelled" && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
-          <p className="font-medium">This consultation has been cancelled</p>
-          {consultation.cancelReason && <p className="text-sm mt-1">Reason: {consultation.cancelReason}</p>}
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="md:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Patient Information</CardTitle>
+              <CardDescription>Details of the patient</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">Name</p>
+                <p>{consultation.patientName}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium">Email</p>
+                <p>{consultation.email}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium">Phone</p>
+                <p>{consultation.phone}</p>
+              </div>
+              {consultation.details?.dob && (
+                <div>
+                  <p className="text-sm font-medium">Date of Birth</p>
+                  <p>{consultation.details.dob}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-medium">Request Date</p>
+                <p>{formatDate(consultation.createdAt)}</p>
+              </div>
+              {consultation.status === "completed" && consultation.completedAt && (
+                <div>
+                  <p className="text-sm font-medium">Completed Date</p>
+                  <p>{formatDate(consultation.completedAt)}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
 
-      {consultation.status === "completed" && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md mb-4">
-          <p className="font-medium">This consultation has been completed</p>
-          {consultation.completedAt && (
-            <p className="text-sm mt-1">Completed on: {new Date(consultation.completedAt).toLocaleString()}</p>
-          )}
-        </div>
-      )}
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Consultation Details</CardTitle>
+              <CardDescription>Information about the consultation request</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="details" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="notes">Doctor Notes</TabsTrigger>
+                </TabsList>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Patient Information */}
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Patient Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="text-lg">{consultation.patientName[0]}</AvatarFallback>
-              </Avatar>
-              <div>
-                <h3 className="text-xl font-semibold">{consultation.patientName}</h3>
-                {getConsultationTypeBadge(consultation.type)}
-              </div>
-            </div>
+                <TabsContent value="details" className="space-y-4">
+                  <div>
+                    <h3 className="font-medium mb-2">Reason for Consultation</h3>
+                    <p className="text-slate-600 whitespace-pre-line">{consultation.reason}</p>
+                  </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-slate-500">Email:</span>
-                <span>{consultation.email}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-slate-500">Phone:</span>
-                <span>{consultation.phone}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-slate-500">Date Requested:</span>
-                <span>{new Date(consultation.createdAt).toLocaleDateString()}</span>
-              </div>
-            </div>
-
-            <div className="pt-4 space-y-2">
-              <h4 className="font-medium">Reason for Consultation</h4>
-              <p className="text-slate-700 bg-slate-50 p-3 rounded-md">{consultation.reason}</p>
-            </div>
-
-            <div className="pt-2 space-y-2">
-              <h4 className="font-medium">Patient History</h4>
-
-              <div>
-                <h5 className="text-sm font-medium text-slate-500">Allergies</h5>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {consultation.patientHistory?.allergies.map((allergy, index) => (
-                    <Badge key={index} variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                      {allergy}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h5 className="text-sm font-medium text-slate-500">Current Medications</h5>
-                <ul className="list-disc list-inside text-sm mt-1">
-                  {consultation.patientHistory?.medications.map((medication, index) => (
-                    <li key={index}>{medication}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="text-sm font-medium text-slate-500">Medical Conditions</h5>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {consultation.patientHistory?.conditions.map((condition, index) => (
-                    <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                      {condition}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 space-y-2">
-              <h4 className="font-medium">Contact Patient</h4>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1">
-                  <Phone className="mr-2 h-4 w-4" />
-                  Call
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Message
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  <Video className="mr-2 h-4 w-4" />
-                  Video
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Consultation Workspace */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Consultation Workspace</CardTitle>
-            <CardDescription>Document your findings and create necessary medical documents</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="notes">
-              <TabsList className="mb-4">
-                <TabsTrigger value="notes">Clinical Notes</TabsTrigger>
-                <TabsTrigger value="doctor-notes">Doctor Notes</TabsTrigger>
-                <TabsTrigger value="history">Past Consultations</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="notes" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="diagnosis">Diagnosis</Label>
-                  <Input
-                    id="diagnosis"
-                    placeholder="Enter diagnosis"
-                    value={diagnosis}
-                    onChange={(e) => setDiagnosis(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Clinical Notes</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Enter your clinical notes here..."
-                    className="min-h-[200px]"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <Button onClick={saveNotes}>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Notes
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="doctor-notes" className="space-y-4">
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                  <p className="text-sm text-yellow-700">
-                    <strong>Note:</strong> These notes are for internal use only and will never be visible to patients.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="doctorNotes">Doctor Notes (Internal Only)</Label>
-                  <Textarea
-                    id="doctorNotes"
-                    placeholder="Enter confidential notes about this patient or consultation..."
-                    className="min-h-[200px]"
-                    value={doctorNotes}
-                    onChange={(e) => setDoctorNotes(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex justify-end items-center gap-4">
-                  {saveSuccess && <p className="text-sm text-green-600">Notes saved successfully!</p>}
-                  <Button onClick={saveDoctorNotes} disabled={isSaving}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Saving..." : "Save Doctor Notes"}
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="history">
-                {consultation.patientHistory?.pastConsultations.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">No past consultations found</div>
-                ) : (
-                  <div className="space-y-4">
-                    {consultation.patientHistory?.pastConsultations.map((pastConsult) => (
-                      <div key={pastConsult.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{new Date(pastConsult.date).toLocaleDateString()}</h3>
-                            <p className="text-sm text-slate-500">Doctor: {pastConsult.doctor}</p>
-                          </div>
+                  {consultation.type === "medical-certificate" && consultation.details && (
+                    <div>
+                      <h3 className="font-medium mb-2">Medical Certificate Details</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium">Start Date</p>
+                          <p>{consultation.details.startDate}</p>
                         </div>
-                        <div className="mt-2 space-y-2">
-                          <div>
-                            <span className="text-sm font-medium">Reason: </span>
-                            <span className="text-sm">{pastConsult.reason}</span>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium">Diagnosis: </span>
-                            <span className="text-sm">{pastConsult.diagnosis}</span>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium">Treatment: </span>
-                            <span className="text-sm">{pastConsult.treatment}</span>
-                          </div>
+                        <div>
+                          <p className="text-sm font-medium">End Date</p>
+                          <p>{consultation.details.endDate}</p>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  {consultation.type === "prescription" && consultation.details && (
+                    <div>
+                      <h3 className="font-medium mb-2">Prescription Details</h3>
+                      <div>
+                        <p className="text-sm font-medium">Medication</p>
+                        <p>{consultation.details.medication}</p>
+                      </div>
+                      {consultation.details.deliveryOption && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium">Delivery Option</p>
+                          <p className="capitalize">{consultation.details.deliveryOption}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="notes" className="space-y-4">
+                  <div>
+                    <Label htmlFor="doctorNotes">Doctor Notes (only visible to healthcare staff)</Label>
+                    <Textarea
+                      id="doctorNotes"
+                      placeholder="Enter your notes about this consultation..."
+                      className="min-h-[200px] mt-2"
+                      value={doctorNotes}
+                      onChange={(e) => setDoctorNotes(e.target.value)}
+                      disabled={consultation.status !== "pending"}
+                    />
                   </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="documents" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Medical Certificate</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-slate-500">Issue a medical certificate for the patient</p>
-                    </CardContent>
-                    <CardFooter>
-                      <Dialog open={isMedCertDialogOpen} onOpenChange={setIsMedCertDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="w-full" disabled={consultation.status !== "pending"}>
-                            <ClipboardList className="mr-2 h-4 w-4" />
-                            Create Certificate
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-3xl">
-                          <DialogHeader>
-                            <DialogTitle>Issue Medical Certificate</DialogTitle>
-                            <DialogDescription>
-                              Create a medical certificate for {consultation.patientName}
-                            </DialogDescription>
-                          </DialogHeader>
-
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="condition">Medical Condition</Label>
-                              <Input id="condition" placeholder="Enter medical condition" />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="startDate">Start Date</Label>
-                                <Input id="startDate" type="date" />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="endDate">End Date</Label>
-                                <Input id="endDate" type="date" />
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="recommendations">Recommendations</Label>
-                              <Textarea
-                                id="recommendations"
-                                placeholder="Enter your recommendations..."
-                                className="min-h-[100px]"
-                              />
-                            </div>
-                          </div>
-
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsMedCertDialogOpen(false)}>
-                              Cancel
-                            </Button>
-                            <Button onClick={() => setIsMedCertDialogOpen(false)}>Generate Certificate</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </CardFooter>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Prescription</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-slate-500">Issue a prescription for the patient</p>
-                    </CardContent>
-                    <CardFooter>
-                      <Dialog open={isPrescriptionDialogOpen} onOpenChange={setIsPrescriptionDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="w-full" disabled={consultation.status !== "pending"}>
-                            <FileText className="mr-2 h-4 w-4" />
-                            Create Prescription
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-3xl">
-                          <DialogHeader>
-                            <DialogTitle>Issue Prescription</DialogTitle>
-                            <DialogDescription>Create a prescription for {consultation.patientName}</DialogDescription>
-                          </DialogHeader>
-
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="medication">Medication</Label>
-                              <Input id="medication" placeholder="Enter medication name" />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="dosage">Dosage</Label>
-                                <Input id="dosage" placeholder="e.g., 10mg" />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="frequency">Frequency</Label>
-                                <Input id="frequency" placeholder="e.g., Twice daily" />
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="duration">Duration</Label>
-                              <Input id="duration" placeholder="e.g., 7 days" />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="instructions">Special Instructions</Label>
-                              <Textarea
-                                id="instructions"
-                                placeholder="Enter any special instructions..."
-                                className="min-h-[100px]"
-                              />
-                            </div>
-                          </div>
-
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsPrescriptionDialogOpen(false)}>
-                              Cancel
-                            </Button>
-                            <Button onClick={() => setIsPrescriptionDialogOpen(false)}>Generate Prescription</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </CardFooter>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Referral</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-slate-500">Create a referral to a specialist</p>
-                    </CardContent>
-                    <CardFooter>
-                      <Dialog open={isReferralDialogOpen} onOpenChange={setIsReferralDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="w-full" disabled={consultation.status !== "pending"}>
-                            <Share2 className="mr-2 h-4 w-4" />
-                            Create Referral
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-3xl">
-                          <DialogHeader>
-                            <DialogTitle>Create Referral</DialogTitle>
-                            <DialogDescription>Refer {consultation.patientName} to a specialist</DialogDescription>
-                          </DialogHeader>
-
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="specialty">Specialty</Label>
-                              <Select>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select specialty" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="cardiology">Cardiology</SelectItem>
-                                  <SelectItem value="dermatology">Dermatology</SelectItem>
-                                  <SelectItem value="neurology">Neurology</SelectItem>
-                                  <SelectItem value="orthopedics">Orthopedics</SelectItem>
-                                  <SelectItem value="psychiatry">Psychiatry</SelectItem>
-                                  <SelectItem value="ophthalmology">Ophthalmology</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="urgency">Urgency</Label>
-                              <Select>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select urgency" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="routine">Routine</SelectItem>
-                                  <SelectItem value="urgent">Urgent</SelectItem>
-                                  <SelectItem value="emergency">Emergency</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="reason">Reason for Referral</Label>
-                              <Textarea
-                                id="reason"
-                                placeholder="Enter reason for referral..."
-                                className="min-h-[100px]"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="notes">Clinical Notes for Specialist</Label>
-                              <Textarea id="notes" placeholder="Enter clinical notes..." className="min-h-[100px]" />
-                            </div>
-                          </div>
-
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsReferralDialogOpen(false)}>
-                              Cancel
-                            </Button>
-                            <Button onClick={() => setIsReferralDialogOpen(false)}>Generate Referral</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </CardFooter>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Lab Request</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-slate-500">Request laboratory tests</p>
-                    </CardContent>
-                    <CardFooter>
-                      <Button variant="outline" className="w-full" disabled={consultation.status !== "pending"}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Create Lab Request
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                  {consultation.status === "pending" && (
+                    <Button onClick={handleSaveNotes} disabled={isSaving}>
+                      {isSaving ? "Saving..." : "Save Notes"}
+                    </Button>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button asChild variant="outline">
+                <Link href="/doctor/dashboard">Back to Dashboard</Link>
+              </Button>
+              {consultation.status === "pending" && (
+                <Button onClick={handleCompleteConsultation} disabled={isCompleting}>
+                  {isCompleting ? "Completing..." : "Mark as Completed"}
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        </div>
       </div>
     </div>
   )

@@ -47,6 +47,7 @@ export interface Doctor {
   specialty: string
   phone?: string
   passwordHash: string
+  password?: string // For direct password comparison in demo
   status: "active" | "inactive" | "on leave"
   createdAt: string
   updatedAt: string
@@ -224,6 +225,7 @@ export function initDatabase(): void {
             specialty: "General Practice",
             phone: "0498765432",
             passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "test123"
+            password: "test123", // For demo purposes
             status: "active",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -236,7 +238,8 @@ export function initDatabase(): void {
             lastName: "Johnson",
             specialty: "Dermatology",
             phone: "0487654321",
-            passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "password123"
+            passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "test123"
+            password: "test123", // For demo purposes
             status: "active",
             createdAt: new Date(Date.now() - 86400000).toISOString(),
             updatedAt: new Date(Date.now() - 86400000).toISOString(),
@@ -278,11 +281,15 @@ export function initDatabase(): void {
             // In a real app, we would hash the password here
             // For demo purposes, we'll use a pre-hashed value
             doctor.passwordHash = "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G" // "test123"
-            delete doctor.password
             updated = true
           }
           if (doctor.isActive === undefined) {
             doctor.isActive = doctor.status === "active"
+            updated = true
+          }
+          // Add plain password for demo purposes
+          if (doctor.password === undefined) {
+            doctor.password = "test123"
             updated = true
           }
         })
@@ -609,21 +616,17 @@ export function getDoctorByEmail(email: string): Doctor | null {
 
 export function authenticateDoctor(email: string, password: string): Doctor | null {
   const db = getDatabase()
-  // In a real app, we would use bcrypt to compare the password hash
-  // For demo purposes, we'll just check if the email exists and the doctor is active
-  const doctor = (db.doctors || []).find((doctor) => doctor.email === email && doctor.isActive)
+  // Find the doctor by email
+  const doctor = (db.doctors || []).find((doctor) => doctor.email === email)
 
   if (doctor) {
-    // For demo purposes, we'll accept any password for doc1@freedoc.com.au
-    if (email === "doc1@freedoc.com.au") {
-      // Update last login time
-      updateDoctorLoginTime(doctor.id)
-      return doctor
+    // Check if the doctor is active
+    if (!doctor.isActive) {
+      return null
     }
 
-    // In a real app, we would use bcrypt.compare here
-    // For demo, we'll just check if the password is "test123"
-    if (password === "test123") {
+    // For demo purposes, we'll check the plain password
+    if (doctor.password === password) {
       // Update last login time
       updateDoctorLoginTime(doctor.id)
       return doctor
@@ -634,7 +637,7 @@ export function authenticateDoctor(email: string, password: string): Doctor | nu
 }
 
 export function createDoctor(
-  doctorData: Omit<Doctor, "id" | "createdAt" | "updatedAt" | "passwordHash" | "isActive">,
+  doctorData: Omit<Doctor, "id" | "createdAt" | "updatedAt" | "passwordHash" | "isActive"> & { password?: string },
 ): Doctor {
   const db = getDatabase()
 
@@ -650,16 +653,17 @@ export function createDoctor(
   }
 
   // In a real app, we would hash the password here
-  // For demo purposes, we'll use a pre-hashed value
+  // For demo purposes, we'll store the plain password too
   const newDoctor: Doctor = {
     ...doctorData,
     id: `doc${Date.now()}`,
-    passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "test123"
+    passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // Placeholder hash
+    password: doctorData.password || "test123", // Store plain password for demo
     status: doctorData.status || "active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     lastLogin: new Date().toISOString(),
-    isActive: true,
+    isActive: doctorData.status === "active",
   }
 
   db.doctors.push(newDoctor)
@@ -685,6 +689,11 @@ export function updateDoctor(id: string, doctorData: Partial<Doctor>): Doctor | 
     ...db.doctors[doctorIndex],
     ...doctorData,
     updatedAt: new Date().toISOString(),
+  }
+
+  // If status is updated, also update isActive
+  if (doctorData.status) {
+    updatedDoctor.isActive = doctorData.status === "active"
   }
 
   db.doctors[doctorIndex] = updatedDoctor
@@ -738,16 +747,17 @@ export function updateDoctorPassword(
   }
 
   // In a real app, we would use bcrypt to compare the password hash
-  // For demo purposes, we'll just check if the current password is "test123"
-  if (currentPassword !== "test123") {
+  // For demo purposes, we'll just check if the current password matches
+  if (db.doctors[doctorIndex].password !== currentPassword) {
     return { success: false, message: "Current password is incorrect" }
   }
 
   // In a real app, we would hash the new password here
-  // For demo purposes, we'll use a pre-hashed value
+  // For demo purposes, we'll store the plain password too
   db.doctors[doctorIndex] = {
     ...db.doctors[doctorIndex],
-    passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "test123"
+    passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // Placeholder hash
+    password: newPassword, // Store plain password for demo
     updatedAt: new Date().toISOString(),
   }
 

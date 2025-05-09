@@ -85,14 +85,7 @@ export default function DashboardPage() {
                 here.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button asChild variant="outline">
-                <Link href="/consult">Book Consultation</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/dashboard/profile">View Profile</Link>
-              </Button>
-            </div>
+            <div className="flex items-center gap-2">{/* Buttons removed as requested */}</div>
           </div>
 
           <div className="grid gap-6 md:grid-cols-3 mb-8">

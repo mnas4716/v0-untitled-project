@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, Settings, Shield, LogOut, Eye, EyeOff, Smartphone } from "lucide-react"
+import { User, Shield, LogOut, Eye, EyeOff, Smartphone } from "lucide-react"
 // Import the DashboardHeader component
 import { DashboardHeader } from "@/components/dashboard-header"
 
@@ -71,13 +71,6 @@ export default function SecurityPage() {
                     >
                       <User className="h-5 w-5" />
                       <span>Profile</span>
-                    </Link>
-                    <Link
-                      href="/dashboard/settings"
-                      className="flex items-center gap-3 p-3 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Settings className="h-5 w-5" />
-                      <span>Account Settings</span>
                     </Link>
                     <Link
                       href="/dashboard/security"

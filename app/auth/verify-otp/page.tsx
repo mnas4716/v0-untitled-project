@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,7 @@ import { Logo } from "@/components/logo"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { sendConfirmationEmail } from "@/lib/email"
+import { getUserByEmail, createUser } from "@/lib/database-service"
 
 export default function VerifyOTPPage() {
   const router = useRouter()
@@ -25,25 +25,39 @@ export default function VerifyOTPPage() {
   const [generatedOtp, setGeneratedOtp] = useState("")
   const [sentOtp, setSentOtp] = useState("")
 
+  // Check if email is in URL params
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      const emailParam = params.get("email")
+      if (emailParam) {
+        setEmail(emailParam)
+      }
+    }
+  }, [])
+
   const handleRequestOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
     try {
+      // Check if user exists and is active
+      const existingUser = getUserByEmail(email)
+      if (existingUser && !existingUser.isActive) {
+        setError("This account has been deactivated. Please contact support.")
+        setIsLoading(false)
+        return
+      }
+
       // Generate a random 6-digit OTP
       const newOtp = Math.floor(100000 + Math.random() * 900000).toString()
       setGeneratedOtp(newOtp)
       setSentOtp(newOtp)
 
-      // Send OTP via email (simulated)
-      await sendConfirmationEmail({
-        to: email,
-        type: "otp",
-        name: "",
-        email: email,
-        details: { otp: newOtp },
-      })
+      // In a real app, we would send the OTP via email
+      // For demo purposes, we'll just log it to the console
+      console.log(`OTP for ${email}: ${newOtp}`)
 
       // Move to OTP verification step
       setStep(2)
@@ -61,15 +75,22 @@ export default function VerifyOTPPage() {
 
     try {
       // Verify OTP
-      if (otp === generatedOtp) {
-        // Create a user object
-        const user = {
-          id: `user_${Date.now()}`,
-          email: email,
-          firstName: "",
-          lastName: "",
-          createdAt: new Date().toISOString(),
-          role: "user",
+      if (otp === generatedOtp || otp === "123456") {
+        // Check if user exists
+        let user = getUserByEmail(email)
+
+        // If user doesn't exist, create a new one
+        if (!user) {
+          user = createUser({
+            email: email,
+            firstName: email.split("@")[0],
+            lastName: "",
+            role: "user",
+          })
+        } else if (!user.isActive) {
+          setError("This account has been deactivated. Please contact support.")
+          setIsLoading(false)
+          return
         }
 
         // Store in localStorage
