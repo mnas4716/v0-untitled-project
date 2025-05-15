@@ -2,18 +2,33 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, CheckCircle, ArrowRight, FileText, Upload } from "lucide-react"
+import { ArrowLeft, CheckCircle, ArrowRight, FileText, Upload, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { submitConsultation } from "../actions"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { getConsultRequestsByEmail } from "@/lib/database-service"
+import { AddressFields } from "@/components/address-fields"
+
+// Australian states and territories
+const australianStates = [
+  { value: "NSW", label: "New South Wales" },
+  { value: "VIC", label: "Victoria" },
+  { value: "QLD", label: "Queensland" },
+  { value: "WA", label: "Western Australia" },
+  { value: "SA", label: "South Australia" },
+  { value: "TAS", label: "Tasmania" },
+  { value: "ACT", label: "Australian Capital Territory" },
+  { value: "NT", label: "Northern Territory" },
+]
 
 export default function ConsultPage() {
   const router = useRouter()
@@ -25,15 +40,90 @@ export default function ConsultPage() {
     email: "",
     phone: "",
     dob: "",
+    medicareNumber: "",
+    address: "",
+    suburb: "",
+    state: "",
+    postcode: "",
     reason: "",
   })
   const [files, setFiles] = useState<FileList | null>(null)
   const [fileError, setFileError] = useState("")
   const [submitError, setSubmitError] = useState("")
+  const [hasExistingConsults, setHasExistingConsults] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const [suburb, setSuburb] = useState("")
+  const [state, setState] = useState("")
+  const [postcode, setPostcode] = useState("")
+
+  useEffect(() => {
+    // Check if user is logged in
+    const user = localStorage.getItem("user")
+
+    if (user) {
+      try {
+        const userData = JSON.parse(user)
+
+        // Pre-fill form with user data
+        setFormData((prev) => ({
+          ...prev,
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          email: userData.email || "",
+          phone: userData.phone || "",
+          dob: userData.dob || "",
+          medicareNumber: userData.medicareNumber || "",
+          address: userData.address || "",
+          suburb: userData.suburb || "",
+          state: userData.state || "",
+          postcode: userData.postcode || "",
+        }))
+
+        // Check if user has existing consults
+        const existingConsults = getConsultRequestsByEmail(userData.email)
+        if (existingConsults && existingConsults.length > 0) {
+          setHasExistingConsults(true)
+          // Redirect to dashboard for existing users
+          router.push("/dashboard")
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error)
+      }
+    } else {
+      // For non-logged in users, check if they have previous consults by email
+      const emailsWithConsults = new Set()
+
+      // Get all consults from localStorage
+      const consults = localStorage.getItem("consultations")
+      if (consults) {
+        try {
+          const consultData = JSON.parse(consults)
+          consultData.forEach((consult: any) => {
+            if (consult.email) {
+              emailsWithConsults.add(consult.email)
+            } else if (consult.details && consult.details.email) {
+              emailsWithConsults.add(consult.details.email)
+            }
+          })
+        } catch (error) {
+          console.error("Error parsing consultation data:", error)
+        }
+      }
+
+      // We'll check this when they submit their email in step 1
+    }
+
+    setIsLoading(false)
+  }, [router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleStateChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, state: value }))
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,12 +147,46 @@ export default function ConsultPage() {
     }
   }
 
+  const checkExistingConsults = () => {
+    // Check if this email has previous consults
+    const existingConsults = getConsultRequestsByEmail(formData.email)
+    if (existingConsults && existingConsults.length > 0) {
+      setHasExistingConsults(true)
+      return true
+    }
+    return false
+  }
+
+  const handleNextStep = () => {
+    if (step === 1) {
+      // Check if email has existing consults before proceeding
+      if (checkExistingConsults()) {
+        // Don't proceed to next step
+        return
+      }
+    }
+    setStep(step + 1)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    setSubmitError("")
 
     try {
+      const consultationData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        dob: formData.dob,
+        address: formData.address,
+        suburb: formData.suburb,
+        state: formData.state,
+        postcode: formData.postcode,
+        medicareNumber: formData.medicareNumber,
+        reason: formData.reason,
+      }
+
       const formDataObj = new FormData()
       Object.entries(formData).forEach(([key, value]) => {
         formDataObj.append(key, value)
@@ -93,8 +217,55 @@ export default function ConsultPage() {
     }
   }
 
-  const nextStep = () => setStep(step + 1)
   const prevStep = () => setStep(step - 1)
+  const nextStep = () => setStep(step + 1)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (hasExistingConsults) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <SiteHeader />
+
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-3xl mx-auto">
+            <Alert variant="default" className="mb-6 bg-blue-50 border-blue-200">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
+              <AlertTitle className="text-blue-800">You already have a consultation request</AlertTitle>
+              <AlertDescription className="text-blue-700">
+                We noticed you've submitted a consultation request before. Please sign in to your account to submit
+                additional requests.
+              </AlertDescription>
+            </Alert>
+
+            <div className="flex flex-col gap-4 items-center justify-center">
+              <p className="text-center text-slate-600">
+                For security and continuity of care, all follow-up consultations must be requested through your patient
+                dashboard.
+              </p>
+
+              <div className="flex gap-4 mt-4">
+                <Button asChild variant="default" className="px-8">
+                  <Link href="/auth/signin">Sign In</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/">Return to Home</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <SiteFooter />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -214,11 +385,34 @@ export default function ConsultPage() {
                       className="border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="medicareNumber">Medicare Number</Label>
+                    <Input
+                      id="medicareNumber"
+                      name="medicareNumber"
+                      value={formData.medicareNumber}
+                      onChange={handleChange}
+                      placeholder="Enter your medicare number"
+                      className="border-slate-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-colors rounded-lg"
+                    />
+                  </div>
+
+                  <AddressFields
+                    addressValue={formData.address}
+                    suburbValue={formData.suburb}
+                    stateValue={formData.state}
+                    postcodeValue={formData.postcode}
+                    onAddressChange={(value) => setFormData((prev) => ({ ...prev, address: value }))}
+                    onSuburbChange={(value) => setFormData((prev) => ({ ...prev, suburb: value }))}
+                    onStateChange={(value) => setFormData((prev) => ({ ...prev, state: value }))}
+                    onPostcodeChange={(value) => setFormData((prev) => ({ ...prev, postcode: value }))}
+                  />
                 </CardContent>
                 <CardFooter className="bg-slate-50">
                   <Button
                     type="button"
-                    onClick={nextStep}
+                    onClick={handleNextStep}
                     className="w-full bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1 flex items-center justify-center"
                   >
                     Continue <ArrowRight className="ml-2 h-4 w-4" />
@@ -254,7 +448,7 @@ export default function ConsultPage() {
                   </Button>
                   <Button
                     type="button"
-                    onClick={nextStep}
+                    onClick={handleNextStep}
                     className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1 flex items-center"
                   >
                     Continue <ArrowRight className="ml-2 h-4 w-4" />

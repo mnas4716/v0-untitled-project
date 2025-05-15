@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -7,14 +9,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, FileText, Activity, Settings } from "lucide-react"
+import { Calendar, Clock, FileText, Activity, Settings, MessageSquare, Search } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { getConsultRequestsByDoctorId } from "@/lib/database-service"
+
+interface DoctorNote {
+  text: string
+  timestamp: string
+  doctorId: string
+  doctorName: string
+}
 
 export default function DoctorDashboardPage() {
   const router = useRouter()
   const [doctor, setDoctor] = useState<any>(null)
   const [consultations, setConsultations] = useState<any[]>([])
+  const [filteredConsultations, setFilteredConsultations] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activeTab, setActiveTab] = useState("all")
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -30,9 +44,51 @@ export default function DoctorDashboardPage() {
         const parsedDoctor = JSON.parse(storedDoctor)
         setDoctor(parsedDoctor)
 
-        // Get doctor's consultations
+        // Get only consultations assigned to this doctor
         const doctorConsultations = getConsultRequestsByDoctorId(parsedDoctor.id)
-        setConsultations(doctorConsultations)
+
+        // Process doctor notes for each consultation
+        const processedConsultations = doctorConsultations.map((consult: any) => {
+          let doctorNotes: DoctorNote[] = []
+
+          if (consult.doctorNotes) {
+            try {
+              // Try to parse as JSON (new format)
+              const parsedNotes = JSON.parse(consult.doctorNotes)
+              if (Array.isArray(parsedNotes)) {
+                doctorNotes = parsedNotes
+              } else {
+                // Handle legacy format
+                doctorNotes = [
+                  {
+                    text: consult.doctorNotes,
+                    timestamp: consult.updatedAt || consult.createdAt,
+                    doctorId: consult.assignedDoctorId || "unknown",
+                    doctorName: "Doctor",
+                  },
+                ]
+              }
+            } catch (e) {
+              // If not valid JSON, treat as legacy string format
+              doctorNotes = [
+                {
+                  text: consult.doctorNotes,
+                  timestamp: consult.updatedAt || consult.createdAt,
+                  doctorId: consult.assignedDoctorId || "unknown",
+                  doctorName: "Doctor",
+                },
+              ]
+            }
+          }
+
+          return {
+            ...consult,
+            doctorNotesArray: doctorNotes,
+          }
+        })
+
+        setConsultations(processedConsultations)
+        setFilteredConsultations(processedConsultations)
       } catch (error) {
         console.error("Error parsing doctor data:", error)
       } finally {
@@ -40,6 +96,37 @@ export default function DoctorDashboardPage() {
       }
     }
   }, [router])
+
+  // Filter consultations based on search term and active tab
+  useEffect(() => {
+    let filtered = consultations
+
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(
+        (consult) =>
+          consult.patientName.toLowerCase().includes(term) ||
+          consult.email.toLowerCase().includes(term) ||
+          consult.reason.toLowerCase().includes(term),
+      )
+    }
+
+    // Filter by status
+    if (activeTab !== "all") {
+      filtered = filtered.filter((consult) => consult.status === activeTab)
+    }
+
+    setFilteredConsultations(filtered)
+  }, [searchTerm, activeTab, consultations])
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
+  }
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+  }
 
   const handleSignOut = () => {
     if (typeof window !== "undefined") {
@@ -49,9 +136,9 @@ export default function DoctorDashboardPage() {
   }
 
   // Group consultations by type
-  const pendingConsultations = consultations.filter((c) => c.status === "pending")
-  const completedConsultations = consultations.filter((c) => c.status === "completed")
-  const cancelledConsultations = consultations.filter((c) => c.status === "cancelled")
+  const pendingConsultations = filteredConsultations.filter((c) => c.status === "pending")
+  const completedConsultations = filteredConsultations.filter((c) => c.status === "completed")
+  const cancelledConsultations = filteredConsultations.filter((c) => c.status === "cancelled")
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -59,6 +146,17 @@ export default function DoctorDashboardPage() {
       year: "numeric",
       month: "short",
       day: "numeric",
+    })
+  }
+
+  // Format timestamp for display
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
     })
   }
 
@@ -183,6 +281,23 @@ export default function DoctorDashboardPage() {
               <CardDescription>View and manage your assigned consultations</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="flex flex-col space-y-4 md:flex-row md:items-end md:space-x-4 md:space-y-0 mb-4">
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="search">Search</Label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="search"
+                      type="search"
+                      placeholder="Search by name, email, or reason..."
+                      className="pl-8"
+                      value={searchTerm}
+                      onChange={handleSearch}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <Tabs defaultValue="pending" className="space-y-4">
                 <TabsList>
                   <TabsTrigger value="pending">Pending</TabsTrigger>
@@ -230,6 +345,15 @@ export default function DoctorDashboardPage() {
                           <div className="mt-2">
                             <p className="text-sm text-slate-600">{consultation.reason}</p>
                           </div>
+
+                          {/* Attachments indicator */}
+                          {consultation.attachments && consultation.attachments.length > 0 && (
+                            <div className="mt-2 text-sm text-blue-600 flex items-center">
+                              <FileText className="h-4 w-4 mr-1" />
+                              {consultation.attachments.length} attachment
+                              {consultation.attachments.length !== 1 ? "s" : ""}
+                            </div>
+                          )}
                         </div>
                       ))
                   )}
@@ -279,10 +403,29 @@ export default function DoctorDashboardPage() {
                           <div className="mt-2">
                             <p className="text-sm text-slate-600">{consultation.reason}</p>
                           </div>
-                          {consultation.doctorNotes && (
-                            <div className="mt-2 p-2 bg-blue-50 rounded-md">
-                              <p className="text-sm font-medium text-blue-800">Your Notes:</p>
-                              <p className="text-sm text-blue-700">{consultation.doctorNotes.split("\n")[0]}...</p>
+
+                          {/* Doctor Notes Section */}
+                          {consultation.doctorNotesArray && consultation.doctorNotesArray.length > 0 && (
+                            <div className="mt-2">
+                              <div className="font-medium flex items-center text-sm">
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                Your Notes
+                              </div>
+                              <div className="mt-1 p-2 bg-blue-50 rounded-md">
+                                <p className="text-sm text-blue-700">
+                                  {consultation.doctorNotesArray[0].text.split("\n")[0]}
+                                  {consultation.doctorNotesArray[0].text.includes("\n") && "..."}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Attachments indicator */}
+                          {consultation.attachments && consultation.attachments.length > 0 && (
+                            <div className="mt-2 text-sm text-blue-600 flex items-center">
+                              <FileText className="h-4 w-4 mr-1" />
+                              {consultation.attachments.length} attachment
+                              {consultation.attachments.length !== 1 ? "s" : ""}
                             </div>
                           )}
                         </div>
@@ -291,12 +434,12 @@ export default function DoctorDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="all" className="space-y-4">
-                  {consultations.length === 0 ? (
+                  {filteredConsultations.length === 0 ? (
                     <div className="text-center py-8 text-slate-500">
                       <p>You don't have any consultations yet.</p>
                     </div>
                   ) : (
-                    consultations
+                    filteredConsultations
                       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                       .map((consultation) => (
                         <div key={consultation.id} className="border rounded-lg p-4 bg-white">
@@ -346,10 +489,29 @@ export default function DoctorDashboardPage() {
                           <div className="mt-2">
                             <p className="text-sm text-slate-600">{consultation.reason}</p>
                           </div>
-                          {consultation.doctorNotes && (
-                            <div className="mt-2 p-2 bg-blue-50 rounded-md">
-                              <p className="text-sm font-medium text-blue-800">Your Notes:</p>
-                              <p className="text-sm text-blue-700">{consultation.doctorNotes.split("\n")[0]}...</p>
+
+                          {/* Doctor Notes Section */}
+                          {consultation.doctorNotesArray && consultation.doctorNotesArray.length > 0 && (
+                            <div className="mt-2">
+                              <div className="font-medium flex items-center text-sm">
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                Your Notes
+                              </div>
+                              <div className="mt-1 p-2 bg-blue-50 rounded-md">
+                                <p className="text-sm text-blue-700">
+                                  {consultation.doctorNotesArray[0].text.split("\n")[0]}
+                                  {consultation.doctorNotesArray[0].text.includes("\n") && "..."}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Attachments indicator */}
+                          {consultation.attachments && consultation.attachments.length > 0 && (
+                            <div className="mt-2 text-sm text-blue-600 flex items-center">
+                              <FileText className="h-4 w-4 mr-1" />
+                              {consultation.attachments.length} attachment
+                              {consultation.attachments.length !== 1 ? "s" : ""}
                             </div>
                           )}
                         </div>

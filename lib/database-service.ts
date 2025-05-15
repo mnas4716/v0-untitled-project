@@ -9,11 +9,25 @@ export interface User {
   lastName: string
   phone?: string
   dob?: string
+  medicareNumber?: string
+  address?: string
+  suburb?: string
+  state?: string
+  postcode?: string
   createdAt: string
   updatedAt: string
   lastLogin?: string
   role?: string
   isActive: boolean
+}
+
+export interface FileAttachment {
+  id: string
+  fileName: string
+  fileType: string
+  fileSize: number
+  content: string // base64 encoded content
+  uploadedAt: string
 }
 
 export interface ConsultRequest {
@@ -36,6 +50,7 @@ export interface ConsultRequest {
   notes?: string
   doctorNotes?: string
   assignedDoctorId?: string
+  attachments?: FileAttachment[] // New field for file attachments
 }
 
 // Add Doctor type
@@ -79,6 +94,11 @@ export function initDatabase(): void {
             firstName: "John",
             lastName: "Doe",
             phone: "0412345678",
+            medicareNumber: "2345678901",
+            address: "123 Main St",
+            suburb: "Sydney",
+            state: "NSW",
+            postcode: "2000",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             role: "user",
@@ -91,6 +111,11 @@ export function initDatabase(): void {
             lastName: "Smith",
             phone: "0423456789",
             dob: "1985-06-15",
+            medicareNumber: "3456789012",
+            address: "456 Park Ave",
+            suburb: "Melbourne",
+            state: "VIC",
+            postcode: "3000",
             createdAt: new Date(Date.now() - 86400000).toISOString(),
             updatedAt: new Date(Date.now() - 86400000).toISOString(),
             role: "user",
@@ -117,7 +142,22 @@ export function initDatabase(): void {
               email: "john.doe@example.com",
               phone: "0412 345 678",
               dob: "1980-01-15",
+              medicareNumber: "2345678901",
+              address: "123 Main St",
+              suburb: "Sydney",
+              state: "NSW",
+              postcode: "2000",
             },
+            attachments: [
+              {
+                id: "file1",
+                fileName: "medical-history.pdf",
+                fileType: "application/pdf",
+                fileSize: 245000,
+                content: "", // Empty for demo
+                uploadedAt: new Date().toISOString(),
+              },
+            ],
           },
           {
             id: "c2",
@@ -140,6 +180,11 @@ export function initDatabase(): void {
               phone: "0423456789",
               startDate: "2023-05-18",
               endDate: "2023-05-25",
+              medicareNumber: "3456789012",
+              address: "456 Park Ave",
+              suburb: "Melbourne",
+              state: "VIC",
+              postcode: "3000",
             },
             doctorNotes: "Patient has recovered well from flu. No complications observed.",
             assignedDoctorId: "doc1",
@@ -164,7 +209,11 @@ export function initDatabase(): void {
               phone: "0412 345 678",
               dob: "1980-01-15",
               medication: "Amoxicillin 500mg",
-              deliveryOption: "pharmacy",
+              medicareNumber: "2345678901",
+              address: "123 Main St",
+              suburb: "Sydney",
+              state: "NSW",
+              postcode: "2000",
             },
           },
           {
@@ -186,6 +235,11 @@ export function initDatabase(): void {
               email: "jane.smith@example.com",
               phone: "0423456789",
               dob: "1985-06-15",
+              medicareNumber: "3456789012",
+              address: "456 Park Ave",
+              suburb: "Melbourne",
+              state: "VIC",
+              postcode: "3000",
             },
           },
           {
@@ -211,6 +265,11 @@ export function initDatabase(): void {
               dob: "1980-01-15",
               startDate: "2023-05-10",
               endDate: "2023-05-17",
+              medicareNumber: "2345678901",
+              address: "123 Main St",
+              suburb: "Sydney",
+              state: "NSW",
+              postcode: "2000",
             },
             doctorNotes: "Patient has acute lumbar strain. Recommended rest and physical therapy.",
             assignedDoctorId: "doc1",
@@ -261,6 +320,28 @@ export function initDatabase(): void {
             user.isActive = true
             updated = true
           }
+          // Add Medicare Number and Address fields if they don't exist
+          if (user.medicareNumber === undefined) {
+            user.medicareNumber = ""
+            updated = true
+          }
+          if (user.address === undefined) {
+            user.address = ""
+            updated = true
+          }
+          // Add new fields if they don't exist
+          if (user.suburb === undefined) {
+            user.suburb = ""
+            updated = true
+          }
+          if (user.state === undefined) {
+            user.state = ""
+            updated = true
+          }
+          if (user.postcode === undefined) {
+            user.postcode = ""
+            updated = true
+          }
         })
       }
 
@@ -270,6 +351,37 @@ export function initDatabase(): void {
           if (request.userEmail === undefined) {
             request.userEmail = request.email
             updated = true
+          }
+
+          // Add attachments array if it doesn't exist
+          if (request.attachments === undefined) {
+            request.attachments = []
+            updated = true
+          }
+
+          // Add Medicare Number and Address to details if they don't exist
+          if (request.details) {
+            if (request.details.medicareNumber === undefined) {
+              request.details.medicareNumber = ""
+              updated = true
+            }
+            if (request.details.address === undefined) {
+              request.details.address = ""
+              updated = true
+            }
+            // Add new fields if they don't exist
+            if (request.details.suburb === undefined) {
+              request.details.suburb = ""
+              updated = true
+            }
+            if (request.details.state === undefined) {
+              request.details.state = ""
+              updated = true
+            }
+            if (request.details.postcode === undefined) {
+              request.details.postcode = ""
+              updated = true
+            }
           }
         })
       }
@@ -487,6 +599,7 @@ export function createConsultRequest(
     id: `c${Date.now()}`,
     createdAt: new Date().toISOString(),
     userEmail: requestData.email,
+    attachments: requestData.attachments || [],
   }
 
   db.consultRequests.push(newRequest)
@@ -517,6 +630,70 @@ export function updateConsultRequest(id: string, requestData: Partial<ConsultReq
   updateConsultationsLocalStorage(db.consultRequests)
 
   return updatedRequest
+}
+
+// New function to add file attachment to a consult request
+export function addFileAttachmentToConsult(consultId: string, file: File): Promise<ConsultRequest | null> {
+  return new Promise((resolve, reject) => {
+    try {
+      const db = getDatabase()
+      const requestIndex = db.consultRequests.findIndex((req) => req.id === consultId)
+
+      if (requestIndex === -1) {
+        resolve(null)
+        return
+      }
+
+      // Read file as base64
+      const reader = new FileReader()
+      reader.onload = () => {
+        try {
+          const base64Content = reader.result as string
+
+          // Create file attachment object
+          const fileAttachment: FileAttachment = {
+            id: `file${Date.now()}`,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            content: base64Content.split(",")[1], // Remove data URL prefix
+            uploadedAt: new Date().toISOString(),
+          }
+
+          // Add to consult request
+          if (!db.consultRequests[requestIndex].attachments) {
+            db.consultRequests[requestIndex].attachments = []
+          }
+
+          db.consultRequests[requestIndex].attachments!.push(fileAttachment)
+          saveDatabase(db)
+
+          // Update consultations localStorage for compatibility
+          updateConsultationsLocalStorage(db.consultRequests)
+
+          resolve(db.consultRequests[requestIndex])
+        } catch (error) {
+          console.error("Error processing file:", error)
+          reject(error)
+        }
+      }
+
+      reader.onerror = () => {
+        reject(new Error("Error reading file"))
+      }
+
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("Error adding file attachment:", error)
+      reject(error)
+    }
+  })
+}
+
+// Function to get file attachments for a consult
+export function getFileAttachmentsForConsult(consultId: string): FileAttachment[] {
+  const consult = getConsultRequestById(consultId)
+  return consult?.attachments || []
 }
 
 export function assignDoctorToConsult(consultId: string, doctorId: string): ConsultRequest | null {
@@ -833,6 +1010,7 @@ function updateConsultationsLocalStorage(consultRequests: ConsultRequest[]): voi
       notes: req.notes,
       doctorNotes: req.doctorNotes,
       assignedDoctorId: req.assignedDoctorId,
+      attachments: req.attachments,
     }))
 
     localStorage.setItem("consultations", JSON.stringify(consultations))

@@ -7,9 +7,24 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Mail, UserCheck, UserX, ArrowLeft } from "lucide-react"
+import { Calendar, UserCheck, UserX, ArrowLeft, Lock } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { getDoctorById, getConsultRequestsByDoctorId, toggleDoctorActive } from "@/lib/database-service"
+import {
+  getDoctorById,
+  getConsultRequestsByDoctorId,
+  toggleDoctorActive,
+  updateDoctorPassword,
+} from "@/lib/database-service"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export default function PractitionerDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -17,6 +32,10 @@ export default function PractitionerDetailsPage({ params }: { params: { id: stri
   const [practitioner, setPractitioner] = useState<any>(null)
   const [consultations, setConsultations] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     const loadPractitioner = () => {
@@ -74,6 +93,59 @@ export default function PractitionerDetailsPage({ params }: { params: { id: stri
         title: "Error",
         description: "Failed to update practitioner status",
       })
+    }
+  }
+
+  const handleChangePassword = () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please fill in all fields",
+      })
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Passwords do not match",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // For demo purposes, we're bypassing the current password check
+      // In a real app, you would require the admin to enter their own password for authorization
+      const result = updateDoctorPassword(params.id, practitioner.password, newPassword)
+
+      if (result.success) {
+        toast({
+          title: "Password Changed",
+          description: `Password for ${practitioner.firstName} ${practitioner.lastName} has been updated successfully.`,
+        })
+        setIsChangePasswordDialogOpen(false)
+        setNewPassword("")
+        setConfirmPassword("")
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message,
+        })
+      }
+    } catch (error) {
+      console.error("Error changing password:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to change password",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -189,8 +261,8 @@ export default function PractitionerDetailsPage({ params }: { params: { id: stri
                   <Button variant="outline" className="w-full">
                     <Calendar className="mr-2 h-4 w-4" /> Schedule
                   </Button>
-                  <Button variant="outline" className="w-full">
-                    <Mail className="mr-2 h-4 w-4" /> Message
+                  <Button variant="outline" className="w-full" onClick={() => setIsChangePasswordDialogOpen(true)}>
+                    <Lock className="mr-2 h-4 w-4" /> Change Password
                   </Button>
                 </div>
               </div>
@@ -257,6 +329,48 @@ export default function PractitionerDetailsPage({ params }: { params: { id: stri
           </Card>
         </div>
       </div>
+
+      {/* Change Password Dialog */}
+      <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for {practitioner.firstName} {practitioner.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsChangePasswordDialogOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button onClick={handleChangePassword} disabled={isSubmitting}>
+              {isSubmitting ? "Changing..." : "Change Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

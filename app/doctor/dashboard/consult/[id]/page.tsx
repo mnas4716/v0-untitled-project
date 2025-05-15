@@ -11,7 +11,19 @@ import { Label } from "@/components/ui/label"
 import { getConsultRequestById, updateConsultRequest, markConsultRequestAsCompleted } from "@/lib/database-service"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Phone, FileText, Stethoscope, ClipboardList, Save, CheckCircle } from "lucide-react"
+import {
+  Phone,
+  FileText,
+  Stethoscope,
+  ClipboardList,
+  Save,
+  CheckCircle,
+  Download,
+  File,
+  FileImage,
+  FileIcon as FilePdf,
+  MapPin,
+} from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -24,16 +36,34 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 
+interface DoctorNote {
+  text: string
+  timestamp: string
+  doctorId: string
+  doctorName: string
+}
+
+interface FileAttachment {
+  id: string
+  fileName: string
+  fileType: string
+  fileSize: number
+  content: string // base64 encoded content
+  uploadedAt: string
+}
+
 export default function ConsultDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { toast } = useToast()
   const [doctor, setDoctor] = useState<any>(null)
   const [consultation, setConsultation] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [doctorNotes, setDoctorNotes] = useState("")
+  const [currentNote, setCurrentNote] = useState("")
+  const [doctorNotes, setDoctorNotes] = useState<DoctorNote[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [isCompleting, setIsCompleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<FileAttachment[]>([])
 
   // States for dialogs
   const [referralDetails, setReferralDetails] = useState({
@@ -78,7 +108,41 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
             setError("This consultation is not assigned to you")
           } else {
             setConsultation(consultationDetails)
-            setDoctorNotes(consultationDetails.doctorNotes || "")
+
+            // Set attachments if they exist
+            if (consultationDetails.attachments && consultationDetails.attachments.length > 0) {
+              setAttachments(consultationDetails.attachments)
+            }
+
+            // Parse doctor notes if they exist
+            if (consultationDetails.doctorNotes) {
+              try {
+                const parsedNotes = JSON.parse(consultationDetails.doctorNotes)
+                if (Array.isArray(parsedNotes)) {
+                  setDoctorNotes(parsedNotes)
+                } else {
+                  // Handle legacy format - convert to new format
+                  setDoctorNotes([
+                    {
+                      text: consultationDetails.doctorNotes,
+                      timestamp: consultationDetails.updatedAt || consultationDetails.createdAt,
+                      doctorId: parsedDoctor.id,
+                      doctorName: `Dr. ${parsedDoctor.firstName} ${parsedDoctor.lastName}`,
+                    },
+                  ])
+                }
+              } catch (e) {
+                // If not valid JSON, treat as legacy string format
+                setDoctorNotes([
+                  {
+                    text: consultationDetails.doctorNotes,
+                    timestamp: consultationDetails.updatedAt || consultationDetails.createdAt,
+                    doctorId: parsedDoctor.id,
+                    doctorName: `Dr. ${parsedDoctor.firstName} ${parsedDoctor.lastName}`,
+                  },
+                ])
+              }
+            }
           }
         }
       } catch (error) {
@@ -91,29 +155,43 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
   }, [params.id, router])
 
   const handleSaveNotes = async () => {
-    if (!consultation) return
+    if (!consultation || !currentNote.trim()) return
 
     setIsSaving(true)
     try {
+      // Create a new note
+      const newNote: DoctorNote = {
+        text: currentNote,
+        timestamp: new Date().toISOString(),
+        doctorId: doctor.id,
+        doctorName: `Dr. ${doctor.firstName} ${doctor.lastName}`,
+      }
+
+      // Add to existing notes
+      const updatedNotes = [...doctorNotes, newNote]
+
+      // Save to database as JSON string
       const updatedConsultation = updateConsultRequest(consultation.id, {
-        doctorNotes,
+        doctorNotes: JSON.stringify(updatedNotes),
       })
 
       if (updatedConsultation) {
+        setDoctorNotes(updatedNotes)
+        setCurrentNote("") // Clear the input field
         setConsultation(updatedConsultation)
         toast({
-          title: "Notes Saved",
-          description: "Your notes have been saved successfully.",
+          title: "Note Added",
+          description: "Your note has been saved successfully.",
         })
       } else {
-        throw new Error("Failed to save notes")
+        throw new Error("Failed to save note")
       }
     } catch (error) {
       console.error("Error saving notes:", error)
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save notes. Please try again.",
+        description: "Failed to save note. Please try again.",
       })
     } finally {
       setIsSaving(false)
@@ -134,7 +212,7 @@ export default function ConsultDetailPage({ params }: { params: { id: string } }
     setIsCompleting(true)
     try {
       // First save any unsaved notes
-      if (doctorNotes !== consultation.doctorNotes) {
+      if (currentNote.trim()) {
         await handleSaveNotes()
       }
 
@@ -181,24 +259,9 @@ Urgency: ${referralDetails.urgency}
 Date: ${new Date().toLocaleDateString()}
     `.trim()
 
-    const updatedNotes = doctorNotes
-      ? `${doctorNotes}\n\n--- REFERRAL ---\n${referralNote}`
-      : `--- REFERRAL ---\n${referralNote}`
-
-    setDoctorNotes(updatedNotes)
-
-    // Save the updated notes
-    updateConsultRequest(consultation.id, {
-      doctorNotes: updatedNotes,
-    }).then((updatedConsult) => {
-      if (updatedConsult) {
-        setConsultation(updatedConsult)
-        toast({
-          title: "Referral Sent",
-          description: `Referral to ${referralDetails.specialist} has been recorded`,
-        })
-      }
-    })
+    // Add as a new note
+    setCurrentNote(referralNote)
+    handleSaveNotes()
   }
 
   const handleIssuePrescription = () => {
@@ -214,24 +277,9 @@ Instructions: ${prescriptionDetails.instructions}
 Date: ${new Date().toLocaleDateString()}
     `.trim()
 
-    const updatedNotes = doctorNotes
-      ? `${doctorNotes}\n\n--- PRESCRIPTION ---\n${prescriptionNote}`
-      : `--- PRESCRIPTION ---\n${prescriptionNote}`
-
-    setDoctorNotes(updatedNotes)
-
-    // Save the updated notes
-    updateConsultRequest(consultation.id, {
-      doctorNotes: updatedNotes,
-    }).then((updatedConsult) => {
-      if (updatedConsult) {
-        setConsultation(updatedConsult)
-        toast({
-          title: "Prescription Issued",
-          description: `Prescription for ${prescriptionDetails.medication} has been recorded`,
-        })
-      }
-    })
+    // Add as a new note
+    setCurrentNote(prescriptionNote)
+    handleSaveNotes()
   }
 
   const handleIssueMedicalCertificate = () => {
@@ -246,24 +294,9 @@ Restrictions: ${certificateDetails.restrictions}
 Date Issued: ${new Date().toLocaleDateString()}
     `.trim()
 
-    const updatedNotes = doctorNotes
-      ? `${doctorNotes}\n\n--- MEDICAL CERTIFICATE ---\n${certificateNote}`
-      : `--- MEDICAL CERTIFICATE ---\n${certificateNote}`
-
-    setDoctorNotes(updatedNotes)
-
-    // Save the updated notes
-    updateConsultRequest(consultation.id, {
-      doctorNotes: updatedNotes,
-    }).then((updatedConsult) => {
-      if (updatedConsult) {
-        setConsultation(updatedConsult)
-        toast({
-          title: "Medical Certificate Issued",
-          description: `Medical certificate from ${certificateDetails.startDate} to ${certificateDetails.endDate} has been recorded`,
-        })
-      }
-    })
+    // Add as a new note
+    setCurrentNote(certificateNote)
+    handleSaveNotes()
   }
 
   // Format date for display
@@ -273,6 +306,80 @@ Date Issued: ${new Date().toLocaleDateString()}
       month: "short",
       day: "numeric",
     })
+  }
+
+  // Format timestamp for display
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    })
+  }
+
+  // Format file size for display
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " bytes"
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB"
+    else return (bytes / 1048576).toFixed(1) + " MB"
+  }
+
+  // Get file icon based on file type
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith("image/")) return <FileImage className="h-5 w-5" />
+    else if (fileType === "application/pdf") return <FilePdf className="h-5 w-5" />
+    else return <File className="h-5 w-5" />
+  }
+
+  // Handle file download
+  const handleDownloadFile = (attachment: FileAttachment) => {
+    try {
+      // Create a blob from the base64 content
+      const byteCharacters = atob(attachment.content)
+      const byteArrays = []
+
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512)
+
+        const byteNumbers = new Array(slice.length)
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i)
+        }
+
+        const byteArray = new Uint8Array(byteNumbers)
+        byteArrays.push(byteArray)
+      }
+
+      const blob = new Blob(byteArrays, { type: attachment.fileType })
+
+      // Create a download link
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = attachment.fileName
+      document.body.appendChild(a)
+      a.click()
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }, 0)
+
+      toast({
+        title: "File Downloaded",
+        description: `${attachment.fileName} has been downloaded.`,
+      })
+    } catch (error) {
+      console.error("Error downloading file:", error)
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: "There was an error downloading the file.",
+      })
+    }
   }
 
   if (isLoading) {
@@ -359,12 +466,35 @@ Date Issued: ${new Date().toLocaleDateString()}
                 <p className="text-sm font-medium">Phone</p>
                 <p>{consultation.phone}</p>
               </div>
+              {consultation.details?.medicareNumber && (
+                <div>
+                  <p className="text-sm font-medium">Medicare Number</p>
+                  <p>{consultation.details.medicareNumber}</p>
+                </div>
+              )}
               {consultation.details?.dob && (
                 <div>
                   <p className="text-sm font-medium">Date of Birth</p>
                   <p>{consultation.details.dob}</p>
                 </div>
               )}
+
+              {/* Address Information */}
+              <div className="pt-2">
+                <div className="flex items-center mb-2">
+                  <MapPin className="h-4 w-4 mr-1 text-slate-400" />
+                  <p className="text-sm font-medium">Address</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-md">
+                  <p>{consultation.details?.address || "Not provided"}</p>
+                  {consultation.details?.suburb && consultation.details?.state && consultation.details?.postcode && (
+                    <p>
+                      {consultation.details.suburb}, {consultation.details.state} {consultation.details.postcode}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <p className="text-sm font-medium">Request Date</p>
                 <p>{formatDate(consultation.createdAt)}</p>
@@ -373,6 +503,38 @@ Date Issued: ${new Date().toLocaleDateString()}
                 <div>
                   <p className="text-sm font-medium">Completed Date</p>
                   <p>{formatDate(consultation.completedAt)}</p>
+                </div>
+              )}
+
+              {/* Attachments Section */}
+              {attachments.length > 0 && (
+                <div className="pt-4">
+                  <p className="text-sm font-medium mb-2">Attachments</p>
+                  <div className="space-y-2">
+                    {attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center justify-between p-2 bg-slate-50 rounded-md hover:bg-slate-100 transition-colors"
+                      >
+                        <div className="flex items-center">
+                          {getFileIcon(attachment.fileType)}
+                          <span className="ml-2 text-sm truncate max-w-[150px]">{attachment.fileName}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <span className="text-xs text-slate-500 mr-2">{formatFileSize(attachment.fileSize)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownloadFile(attachment)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Download className="h-4 w-4" />
+                            <span className="sr-only">Download</span>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -619,23 +781,31 @@ Date Issued: ${new Date().toLocaleDateString()}
                 <div className="space-y-2">
                   <Textarea
                     placeholder="Enter confidential notes about this patient or consultation..."
-                    className="min-h-[200px]"
-                    value={doctorNotes}
-                    onChange={(e) => setDoctorNotes(e.target.value)}
+                    className="min-h-[150px]"
+                    value={currentNote}
+                    onChange={(e) => setCurrentNote(e.target.value)}
                   />
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={handleSaveNotes} disabled={isSaving}>
+                  <Button onClick={handleSaveNotes} disabled={isSaving || !currentNote.trim()}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Saving..." : "Save Notes"}
+                    {isSaving ? "Saving..." : "Add Note"}
                   </Button>
                 </div>
 
-                {doctorNotes && (
-                  <div className="bg-white border border-slate-200 p-4 rounded-md">
-                    <h4 className="font-medium mb-2">Saved Notes</h4>
-                    <pre className="whitespace-pre-wrap text-sm">{doctorNotes}</pre>
+                {doctorNotes.length > 0 && (
+                  <div className="space-y-4 mt-6">
+                    <h4 className="font-medium">Previous Notes</h4>
+                    {doctorNotes.map((note, index) => (
+                      <div key={index} className="bg-white border border-slate-200 p-4 rounded-md">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium text-sm">{note.doctorName}</span>
+                          <span className="text-xs text-slate-500">{formatTimestamp(note.timestamp)}</span>
+                        </div>
+                        <pre className="whitespace-pre-wrap text-sm">{note.text}</pre>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

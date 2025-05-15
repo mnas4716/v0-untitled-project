@@ -13,36 +13,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { User, Shield, LogOut } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { updateUserProfile } from "@/app/actions"
-
-// Mock function to get the current user - in a real app, this would come from a session
-const getCurrentUser = () => {
-  // Check if we're in the browser
-  if (typeof window !== "undefined") {
-    const userJson = localStorage.getItem("currentUser")
-    if (userJson) {
-      try {
-        return JSON.parse(userJson)
-      } catch (e) {
-        console.error("Error parsing user from localStorage:", e)
-      }
-    }
-  }
-
-  // Return a default user if none is found
-  return {
-    id: "guest",
-    firstName: "Guest",
-    lastName: "User",
-    email: "guest@example.com",
-    phone: "",
-    dob: "",
-  }
-}
+import { getConsultRequestsByEmail, getUserByEmail, updateUser } from "@/lib/database-service"
 
 export default function ProfilePage() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [successMessage, setSuccessMessage] = useState("")
-  const [errorMessage, setErrorMessage] = useState("")
+  // Update the profileData state to include Medicare Number
   const [profileData, setProfileData] = useState({
     id: "",
     firstName: "",
@@ -50,24 +24,99 @@ export default function ProfilePage() {
     email: "",
     phone: "",
     dob: "",
+    medicareNumber: "", // Added Medicare Number
     address: "",
     suburb: "",
     state: "",
     postcode: "",
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
 
-  // Load user data on component mount
+  // Update the useEffect to load Medicare Number
   useEffect(() => {
-    const user = getCurrentUser()
-    setProfileData((prev) => ({
-      ...prev,
-      id: user.id || "",
-      firstName: user.firstName || "",
-      lastName: user.lastName || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      dob: user.dob || "",
-    }))
+    // Check if we're in the browser
+    if (typeof window !== "undefined") {
+      const userJson = localStorage.getItem("user")
+      if (userJson) {
+        try {
+          const user = JSON.parse(userJson)
+
+          // Set initial profile data from user object
+          setProfileData((prev) => ({
+            ...prev,
+            id: user.id || "",
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            email: user.email || "",
+            phone: user.phone || "",
+            dob: user.dob || "",
+            medicareNumber: user.medicareNumber || "", // Added Medicare Number
+            address: user.address || "",
+            suburb: user.suburb || "",
+            state: user.state || "",
+            postcode: user.postcode || "",
+          }))
+
+          // If we have an email but missing other data, try to get it from consultation requests
+          if (user.email && (!user.firstName || !user.phone || !user.dob || !user.medicareNumber || !user.address)) {
+            const consultRequests = getConsultRequestsByEmail(user.email)
+            if (consultRequests && consultRequests.length > 0) {
+              // Get the most recent request
+              const latestRequest = consultRequests.sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+              )[0]
+
+              // Update profile data with information from the consultation request
+              const updatedProfileData = {
+                ...profileData,
+                firstName:
+                  user.firstName || latestRequest.details?.firstName || latestRequest.patientName?.split(" ")[0] || "",
+                lastName:
+                  user.lastName || latestRequest.details?.lastName || latestRequest.patientName?.split(" ")[1] || "",
+                phone: user.phone || latestRequest.details?.phone || latestRequest.phone || "",
+                dob: user.dob || latestRequest.details?.dob || "",
+                medicareNumber: user.medicareNumber || latestRequest.details?.medicareNumber || "", // Added Medicare Number
+                address: user.address || latestRequest.details?.address || "", // Added Address
+              }
+
+              setProfileData(updatedProfileData)
+
+              // Update localStorage and database with complete user data
+              const updatedUser = {
+                ...user,
+                firstName: updatedProfileData.firstName,
+                lastName: updatedProfileData.lastName,
+                phone: updatedProfileData.phone,
+                dob: updatedProfileData.dob,
+                medicareNumber: updatedProfileData.medicareNumber, // Added Medicare Number
+                address: updatedProfileData.address, // Added Address
+              }
+
+              localStorage.setItem("user", JSON.stringify(updatedUser))
+
+              // Update user in database if it exists
+              if (user.id) {
+                const dbUser = getUserByEmail(user.email)
+                if (dbUser) {
+                  updateUser(dbUser.id, {
+                    firstName: updatedProfileData.firstName,
+                    lastName: updatedProfileData.lastName,
+                    phone: updatedProfileData.phone,
+                    dob: updatedProfileData.dob,
+                    medicareNumber: updatedProfileData.medicareNumber, // Added Medicare Number
+                    address: updatedProfileData.address, // Added Address
+                  })
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing user from localStorage:", e)
+        }
+      }
+    }
   }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,9 +145,17 @@ export default function ProfilePage() {
       if (result.success) {
         setSuccessMessage("Profile updated successfully")
 
-        // Update local storage
-        if (typeof window !== "undefined" && result.user) {
-          localStorage.setItem("currentUser", JSON.stringify(result.user))
+        // Update local storage with the updated user data
+        if (typeof window !== "undefined") {
+          const userJson = localStorage.getItem("user")
+          if (userJson) {
+            const user = JSON.parse(userJson)
+            const updatedUser = {
+              ...user,
+              ...profileData,
+            }
+            localStorage.setItem("user", JSON.stringify(updatedUser))
+          }
         }
       } else {
         setErrorMessage(result.message || "Failed to update profile")
@@ -108,6 +165,24 @@ export default function ProfilePage() {
       setErrorMessage("An unexpected error occurred. Please try again.")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Format date for display
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return ""
+
+    // If it's already in YYYY-MM-DD format, return as is for the input field
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString
+    }
+
+    // Try to parse the date and format it
+    try {
+      const date = new Date(dateString)
+      return date.toISOString().split("T")[0] // Returns YYYY-MM-DD
+    } catch (e) {
+      return dateString
     }
   }
 
@@ -126,12 +201,14 @@ export default function ProfilePage() {
                     <Avatar className="h-20 w-20 mb-4">
                       <AvatarImage src="/placeholder.svg?height=80&width=80" alt={profileData.firstName} />
                       <AvatarFallback>
-                        {profileData.firstName.charAt(0)}
-                        {profileData.lastName.charAt(0)}
+                        {profileData.firstName ? profileData.firstName.charAt(0) : ""}
+                        {profileData.lastName ? profileData.lastName.charAt(0) : ""}
                       </AvatarFallback>
                     </Avatar>
                     <h3 className="font-semibold text-lg">
-                      {profileData.firstName} {profileData.lastName}
+                      {profileData.firstName || profileData.lastName
+                        ? `${profileData.firstName} ${profileData.lastName}`
+                        : "Complete Your Profile"}
                     </h3>
                     <p className="text-sm text-gray-500">{profileData.email}</p>
                   </div>
@@ -155,7 +232,7 @@ export default function ProfilePage() {
                       className="w-full flex items-center gap-3 p-3 rounded-md text-red-600 hover:bg-red-50 transition-colors"
                       onClick={() => {
                         if (typeof window !== "undefined") {
-                          localStorage.removeItem("currentUser")
+                          localStorage.removeItem("user")
                           window.location.href = "/"
                         }
                       }}
@@ -254,7 +331,7 @@ export default function ProfilePage() {
                           id="dob"
                           name="dob"
                           type="date"
-                          value={profileData.dob}
+                          value={formatDate(profileData.dob)}
                           onChange={handleChange}
                           className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                         />
@@ -302,6 +379,18 @@ export default function ProfilePage() {
                             className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                           />
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="medicareNumber">Medicare Number</Label>
+                        <Input
+                          id="medicareNumber"
+                          name="medicareNumber"
+                          value={profileData.medicareNumber}
+                          onChange={handleChange}
+                          className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                          placeholder="Enter your Medicare number"
+                        />
                       </div>
                     </CardContent>
                     <CardFooter>

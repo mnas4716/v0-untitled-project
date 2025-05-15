@@ -246,6 +246,38 @@ export default function DashboardPage() {
                               <div className="mt-2">
                                 <p className="text-sm text-slate-600 line-clamp-2">{request.reason}</p>
                               </div>
+
+                              {/* Display doctor notes if available */}
+                              {request.doctorNotes && (
+                                <div className="mt-3 bg-blue-50 p-3 rounded-md">
+                                  <p className="text-xs font-medium text-blue-700 mb-1">Doctor's Notes:</p>
+                                  <p className="text-sm text-slate-700 line-clamp-2">{request.doctorNotes}</p>
+                                </div>
+                              )}
+
+                              {/* Display file attachments if available */}
+                              {request.attachments && request.attachments.length > 0 && (
+                                <div className="mt-2 flex items-center gap-1">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4 text-slate-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                                    />
+                                  </svg>
+                                  <span className="text-xs text-slate-500">
+                                    {request.attachments.length}{" "}
+                                    {request.attachments.length === 1 ? "attachment" : "attachments"}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           ))
                       )}
@@ -287,6 +319,30 @@ export default function DashboardPage() {
                               <div className="mt-2">
                                 <p className="text-sm text-slate-600 line-clamp-2">{request.reason}</p>
                               </div>
+
+                              {/* Display file attachments if available */}
+                              {request.attachments && request.attachments.length > 0 && (
+                                <div className="mt-2 flex items-center gap-1">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4 text-slate-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                                    />
+                                  </svg>
+                                  <span className="text-xs text-slate-500">
+                                    {request.attachments.length}{" "}
+                                    {request.attachments.length === 1 ? "attachment" : "attachments"}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           ))
                       )}
@@ -328,6 +384,38 @@ export default function DashboardPage() {
                               <div className="mt-2">
                                 <p className="text-sm text-slate-600 line-clamp-2">{request.reason}</p>
                               </div>
+
+                              {/* Display doctor notes if available */}
+                              {request.doctorNotes && (
+                                <div className="mt-3 bg-blue-50 p-3 rounded-md">
+                                  <p className="text-xs font-medium text-blue-700 mb-1">Doctor's Notes:</p>
+                                  <p className="text-sm text-slate-700 line-clamp-2">{request.doctorNotes}</p>
+                                </div>
+                              )}
+
+                              {/* Display file attachments if available */}
+                              {request.attachments && request.attachments.length > 0 && (
+                                <div className="mt-2 flex items-center gap-1">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4 text-slate-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                                    />
+                                  </svg>
+                                  <span className="text-xs text-slate-500">
+                                    {request.attachments.length}{" "}
+                                    {request.attachments.length === 1 ? "attachment" : "attachments"}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           ))
                       )}

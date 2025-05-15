@@ -11,6 +11,7 @@ import {
   createConsultRequest,
   cancelConsultRequest,
   getAllDoctors,
+  addFileAttachmentToConsult,
 } from "@/lib/database-service"
 
 // Schema for sign-in form
@@ -37,6 +38,8 @@ const consultSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(8),
   dob: z.string(),
+  medicareNumber: z.string().optional(), // Added Medicare Number
+  address: z.string().min(5), // Added Address
   reason: z.string().min(10),
 })
 
@@ -47,6 +50,8 @@ const medicalCertificateSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(8),
   dob: z.string(),
+  medicareNumber: z.string().optional(), // Added Medicare Number
+  address: z.string().min(5), // Added Address
   reason: z.string().min(10),
   startDate: z.string(),
   endDate: z.string(),
@@ -58,6 +63,8 @@ const prescriptionSchema = z.object({
   lastName: z.string().min(2),
   email: z.string().email(),
   phone: z.string().min(8),
+  medicareNumber: z.string().optional(), // Added Medicare Number
+  address: z.string().min(5), // Added Address
   medication: z.string().min(2),
   deliveryOption: z.string(),
   dob: z.string(),
@@ -262,11 +269,13 @@ export async function submitConsultation(formData: FormData) {
     const email = formData.get("email") as string
     const phone = formData.get("phone") as string
     const dob = formData.get("dob") as string
+    const medicareNumber = formData.get("medicareNumber") as string // Added Medicare Number
+    const address = formData.get("address") as string // Added Address
     const reason = formData.get("reason") as string
     const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
 
     // Basic validation
-    if (!firstName || !lastName || !email || !phone || !dob || !reason) {
+    if (!firstName || !lastName || !email || !phone || !dob || !reason || !address) {
       return { success: false, message: "Missing required fields" }
     }
 
@@ -281,6 +290,8 @@ export async function submitConsultation(formData: FormData) {
         lastName,
         phone,
         dob,
+        medicareNumber, // Added Medicare Number
+        address, // Added Address
       })
 
       if (!user) {
@@ -296,6 +307,8 @@ export async function submitConsultation(formData: FormData) {
         lastName,
         phone,
         dob,
+        medicareNumber, // Added Medicare Number
+        address, // Added Address
       })
     }
 
@@ -326,9 +339,28 @@ export async function submitConsultation(formData: FormData) {
         email,
         phone,
         dob,
+        medicareNumber, // Added Medicare Number
+        address, // Added Address
         files: fileCount > 0 ? true : false,
       },
+      attachments: [],
     })
+
+    // Process file uploads if any
+    if (fileCount > 0) {
+      const filePromises = []
+      for (let i = 0; i < fileCount; i++) {
+        const file = formData.get(`file-${i}`) as File
+        if (file) {
+          filePromises.push(addFileAttachmentToConsult(consultRequest.id, file))
+        }
+      }
+
+      // Wait for all file uploads to complete
+      if (filePromises.length > 0) {
+        await Promise.all(filePromises)
+      }
+    }
 
     // Return success with redirect URL instead of directly redirecting
     return {
@@ -355,13 +387,15 @@ export async function requestMedicalCertificate(formData: FormData) {
     const email = formData.get("email") as string
     const phone = formData.get("phone") as string
     const dob = formData.get("dob") as string
+    const medicareNumber = formData.get("medicareNumber") as string // Added Medicare Number
+    const address = formData.get("address") as string // Added Address
     const reason = formData.get("reason") as string
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
     const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
 
     // Basic validation
-    if (!firstName || !lastName || !email || !phone || !dob || !reason || !startDate || !endDate) {
+    if (!firstName || !lastName || !email || !phone || !dob || !reason || !startDate || !endDate || !address) {
       return { success: false, message: "Missing required fields" }
     }
 
@@ -376,6 +410,8 @@ export async function requestMedicalCertificate(formData: FormData) {
         lastName,
         phone,
         dob,
+        medicareNumber, // Added Medicare Number
+        address, // Added Address
       })
 
       if (!user) {
@@ -391,6 +427,8 @@ export async function requestMedicalCertificate(formData: FormData) {
         lastName,
         phone,
         dob,
+        medicareNumber, // Added Medicare Number
+        address, // Added Address
       })
     }
 
@@ -421,11 +459,30 @@ export async function requestMedicalCertificate(formData: FormData) {
         email,
         phone,
         dob,
+        medicareNumber, // Added Medicare Number
+        address, // Added Address
         startDate,
         endDate,
         files: fileCount > 0 ? true : false,
       },
+      attachments: [],
     })
+
+    // Process file uploads if any
+    if (fileCount > 0) {
+      const filePromises = []
+      for (let i = 0; i < fileCount; i++) {
+        const file = formData.get(`file-${i}`) as File
+        if (file) {
+          filePromises.push(addFileAttachmentToConsult(consultRequest.id, file))
+        }
+      }
+
+      // Wait for all file uploads to complete
+      if (filePromises.length > 0) {
+        await Promise.all(filePromises)
+      }
+    }
 
     // Return success with redirect URL instead of directly redirecting
     return {
@@ -452,12 +509,14 @@ export async function requestPrescription(formData: FormData) {
     const email = formData.get("email") as string
     const phone = formData.get("phone") as string
     const dob = formData.get("dob") as string
+    const medicareNumber = formData.get("medicareNumber") as string // Added Medicare Number
+    const address = formData.get("address") as string // Added Address
     const medication = formData.get("medication") as string
     const deliveryOption = formData.get("deliveryOption") as string
     const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
 
     // Basic validation
-    if (!firstName || !lastName || !email || !phone || !dob || !medication || !deliveryOption) {
+    if (!firstName || !lastName || !email || !phone || !dob || !medication || !address) {
       return { success: false, message: "Missing required fields" }
     }
 
@@ -472,6 +531,8 @@ export async function requestPrescription(formData: FormData) {
         lastName,
         phone,
         dob,
+        medicareNumber, // Added Medicare Number
+        address, // Added Address
       })
 
       if (!user) {
@@ -487,6 +548,8 @@ export async function requestPrescription(formData: FormData) {
         lastName,
         phone,
         dob,
+        medicareNumber, // Added Medicare Number
+        address, // Added Address
       })
     }
 
@@ -517,11 +580,30 @@ export async function requestPrescription(formData: FormData) {
         email,
         phone,
         dob,
+        medicareNumber, // Added Medicare Number
+        address, // Added Address
         medication,
         deliveryOption,
         files: fileCount > 0 ? true : false,
       },
+      attachments: [],
     })
+
+    // Process file uploads if any
+    if (fileCount > 0) {
+      const filePromises = []
+      for (let i = 0; i < fileCount; i++) {
+        const file = formData.get(`file-${i}`) as File
+        if (file) {
+          filePromises.push(addFileAttachmentToConsult(consultRequest.id, file))
+        }
+      }
+
+      // Wait for all file uploads to complete
+      if (filePromises.length > 0) {
+        await Promise.all(filePromises)
+      }
+    }
 
     // Return success with redirect URL instead of directly redirecting
     return {

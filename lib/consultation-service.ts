@@ -5,6 +5,7 @@ import {
   markConsultRequestAsCompleted,
   updateConsultRequest,
 } from "./database-service"
+import { supabase } from "@/lib/supabaseClient"
 
 // Consultation type definition
 export interface Consultation {
@@ -20,6 +21,27 @@ export interface Consultation {
   type?: string
   details?: any
   notes?: string
+}
+
+export interface ConsultationData {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  dob: string
+  address: string
+  suburb: string
+  state: string
+  postcode: string
+  medicareNumber: string
+  reason: string
+  symptoms: string
+  duration: string
+  medication: string
+  allergies: string
+  practitionerId: string
+  appointmentTime: string
+  appointmentDate: string
 }
 
 // Get all consultations from database
@@ -94,6 +116,46 @@ export function updateConsultationNotes(id: string, notes: string): boolean {
   } catch (error) {
     console.error("Error updating consultation notes:", error)
     return false
+  }
+}
+
+export async function saveConsultation(data: ConsultationData) {
+  try {
+    const { data: insertedData, error } = await supabase
+      .from("consultations")
+      .insert([
+        {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          dob: data.dob,
+          address: data.address,
+          suburb: data.suburb,
+          state: data.state,
+          postcode: data.postcode,
+          medicare_number: data.medicareNumber,
+          reason: data.reason,
+          symptoms: data.symptoms,
+          duration: data.duration,
+          medication: data.medication,
+          allergies: data.allergies,
+          practitioner_id: data.practitionerId,
+          appointment_time: data.appointmentTime,
+          appointment_date: data.appointmentDate,
+          status: "pending",
+        },
+      ])
+      .select()
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return { success: true, data: insertedData }
+  } catch (error) {
+    console.error("Error saving consultation:", error)
+    return { success: false, error: "Failed to save consultation" }
   }
 }
 

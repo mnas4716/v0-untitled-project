@@ -198,12 +198,7 @@ export default function RequestDetailsPage({ params }: { params: { id: string } 
                 </div>
               )}
 
-              {request.doctorNotes && (
-                <div className="bg-blue-50 p-4 rounded-md">
-                  <h3 className="text-sm font-medium text-blue-800">Doctor Notes</h3>
-                  <p className="mt-1 text-blue-700">{request.doctorNotes}</p>
-                </div>
-              )}
+              {/* Removed doctor notes section to hide from patients */}
 
               {request.status === "completed" && request.type === "medical-certificate" && (
                 <div className="bg-green-50 p-4 rounded-md">

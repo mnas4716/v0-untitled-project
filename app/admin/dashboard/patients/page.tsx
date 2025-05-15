@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Search, Plus, Filter, Download, MoreHorizontal, FileText, Calendar, Mail, Phone } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Search, Plus, Filter, Download, FileText, Calendar, Mail, Phone, Eye, UserX, UserCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,20 +19,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { getAllUsers, type User } from "@/lib/database-service"
+import { Badge } from "@/components/ui/badge"
+import { getAllUsers, toggleUserActive, getConsultRequestsByUserId, type User } from "@/lib/database-service"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function PatientsPage() {
+  const router = useRouter()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedPatients, setSelectedPatients] = useState<string[]>([])
@@ -40,6 +37,7 @@ export default function PatientsPage() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [patients, setPatients] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [patientConsults, setPatientConsults] = useState<any[]>([])
 
   // Load patients from the user database
   useEffect(() => {
@@ -61,7 +59,7 @@ export default function PatientsPage() {
     loadPatients()
   }, [])
 
-  // Filter patients based on search term
+  // Filter patients based on search term and status
   const filteredPatients = useMemo(() => {
     return patients.filter((patient) => {
       const matchesSearch =
@@ -70,9 +68,14 @@ export default function PatientsPage() {
         patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         patient.id?.toLowerCase().includes(searchTerm.toLowerCase())
 
-      return matchesSearch
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && patient.isActive) ||
+        (statusFilter === "inactive" && !patient.isActive)
+
+      return matchesSearch && matchesStatus
     })
-  }, [patients, searchTerm])
+  }, [patients, searchTerm, statusFilter])
 
   const togglePatientSelection = (patientId: string) => {
     setSelectedPatients((prev) => {
@@ -94,7 +97,41 @@ export default function PatientsPage() {
 
   const handleViewPatient = (patient: User) => {
     setSelectedPatient(patient)
+
+    // Load patient's consults
+    try {
+      const consults = getConsultRequestsByUserId(patient.id)
+      setPatientConsults(consults)
+    } catch (error) {
+      console.error("Error loading patient consults:", error)
+      setPatientConsults([])
+    }
+
     setIsViewDialogOpen(true)
+  }
+
+  const handleToggleUserActive = (userId: string, currentStatus: boolean) => {
+    try {
+      const updatedUser = toggleUserActive(userId)
+
+      if (updatedUser) {
+        // Update the patients list
+        setPatients((prev) => prev.map((p) => (p.id === userId ? updatedUser : p)))
+
+        toast({
+          title: updatedUser.isActive ? "Patient Activated" : "Patient Deactivated",
+          description: `Patient has been ${updatedUser.isActive ? "activated" : "deactivated"} successfully.`,
+          variant: updatedUser.isActive ? "default" : "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error toggling patient status:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update patient status.",
+        variant: "destructive",
+      })
+    }
   }
 
   // Format date for display
@@ -250,19 +287,20 @@ export default function PatientsPage() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Registered</TableHead>
                   <TableHead>Last Login</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                       Loading patients...
                     </TableCell>
                   </TableRow>
                 ) : filteredPatients.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                       No patients found
                     </TableCell>
                   </TableRow>
@@ -301,28 +339,39 @@ export default function PatientsPage() {
                       </TableCell>
                       <TableCell>{formatDate(patient.createdAt)}</TableCell>
                       <TableCell>{patient.lastLogin ? formatDate(patient.lastLogin) : "Never"}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleViewPatient(patient)}>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Patient</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                              <Calendar className="mr-2 h-4 w-4" /> Schedule Appointment
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <FileText className="mr-2 h-4 w-4" /> Medical Records
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">Delete Patient</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <TableCell>
+                        <Badge
+                          className={
+                            patient.isActive
+                              ? "bg-green-100 text-green-800 hover:bg-green-200"
+                              : "bg-red-100 text-red-800 hover:bg-red-200"
+                          }
+                        >
+                          {patient.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button variant="outline" size="sm" className="h-8" onClick={() => handleViewPatient(patient)}>
+                          <Eye className="h-4 w-4 mr-1" /> View
+                        </Button>
+                        <Button
+                          variant={patient.isActive ? "destructive" : "outline"}
+                          size="sm"
+                          className={
+                            !patient.isActive ? "h-8 text-green-600 border-green-200 hover:bg-green-50" : "h-8"
+                          }
+                          onClick={() => handleToggleUserActive(patient.id, patient.isActive)}
+                        >
+                          {patient.isActive ? (
+                            <>
+                              <UserX className="h-4 w-4 mr-1" /> Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck className="h-4 w-4 mr-1" /> Activate
+                            </>
+                          )}
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -342,7 +391,7 @@ export default function PatientsPage() {
       {/* Patient Details Dialog */}
       {selectedPatient && (
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Patient Details</DialogTitle>
             </DialogHeader>
@@ -360,6 +409,14 @@ export default function PatientsPage() {
                 </h3>
                 <p className="text-gray-500 text-center">{selectedPatient.id}</p>
 
+                <Badge
+                  className={`mt-2 ${
+                    selectedPatient.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {selectedPatient.isActive ? "Active" : "Inactive"}
+                </Badge>
+
                 <div className="mt-4 w-full space-y-2">
                   <Button variant="outline" className="w-full justify-start">
                     <Calendar className="mr-2 h-4 w-4" /> Schedule Appointment
@@ -370,6 +427,24 @@ export default function PatientsPage() {
                   <Button variant="outline" className="w-full justify-start">
                     <Mail className="mr-2 h-4 w-4" /> Send Message
                   </Button>
+                  <Button
+                    variant={selectedPatient.isActive ? "destructive" : "outline"}
+                    className={`w-full justify-start ${!selectedPatient.isActive ? "text-green-600 border-green-200" : ""}`}
+                    onClick={() => {
+                      handleToggleUserActive(selectedPatient.id, selectedPatient.isActive)
+                      setSelectedPatient((prev) => (prev ? { ...prev, isActive: !prev.isActive } : null))
+                    }}
+                  >
+                    {selectedPatient.isActive ? (
+                      <>
+                        <UserX className="mr-2 h-4 w-4" /> Deactivate Patient
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="mr-2 h-4 w-4" /> Activate Patient
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
 
@@ -378,7 +453,7 @@ export default function PatientsPage() {
                   <TabsList className="mb-4">
                     <TabsTrigger value="info">Personal Info</TabsTrigger>
                     <TabsTrigger value="medical">Medical Info</TabsTrigger>
-                    <TabsTrigger value="visits">Visit History</TabsTrigger>
+                    <TabsTrigger value="consults">Consultations</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="info" className="space-y-4">
@@ -397,6 +472,20 @@ export default function PatientsPage() {
                       <div>
                         <p className="text-sm text-gray-500">Date of Birth</p>
                         <p>{formatDate(selectedPatient.dob)}</p>
+                      </div>
+                    )}
+
+                    {selectedPatient.medicareNumber && (
+                      <div>
+                        <p className="text-sm text-gray-500">Medicare Number</p>
+                        <p>{selectedPatient.medicareNumber}</p>
+                      </div>
+                    )}
+
+                    {selectedPatient.address && (
+                      <div>
+                        <p className="text-sm text-gray-500">Address</p>
+                        <p>{selectedPatient.address}</p>
                       </div>
                     )}
 
@@ -442,12 +531,91 @@ export default function PatientsPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="visits" className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="p-3 border rounded-md">
-                        <p className="text-center text-gray-500">No visit history available</p>
-                      </div>
-                    </div>
+                  <TabsContent value="consults" className="space-y-4">
+                    <Tabs defaultValue="all">
+                      <TabsList>
+                        <TabsTrigger value="all">All ({patientConsults.length})</TabsTrigger>
+                        <TabsTrigger value="pending">
+                          Pending ({patientConsults.filter((c) => c.status === "pending").length})
+                        </TabsTrigger>
+                        <TabsTrigger value="completed">
+                          Completed ({patientConsults.filter((c) => c.status === "completed").length})
+                        </TabsTrigger>
+                        <TabsTrigger value="cancelled">
+                          Cancelled ({patientConsults.filter((c) => c.status === "cancelled").length})
+                        </TabsTrigger>
+                      </TabsList>
+
+                      {["all", "pending", "completed", "cancelled"].map((status) => (
+                        <TabsContent key={status} value={status} className="space-y-3 mt-4">
+                          {patientConsults.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500 border rounded-md">
+                              No consultations found
+                            </div>
+                          ) : (
+                            <>
+                              {patientConsults
+                                .filter((consult) => status === "all" || consult.status === status)
+                                .map((consult) => (
+                                  <div key={consult.id} className="border rounded-lg p-4">
+                                    <div className="flex justify-between">
+                                      <div>
+                                        <div className="flex items-center gap-2">
+                                          <Badge
+                                            className={
+                                              consult.type === "consultation"
+                                                ? "bg-blue-100 text-blue-800"
+                                                : consult.type === "medical-certificate"
+                                                  ? "bg-green-100 text-green-800"
+                                                  : "bg-purple-100 text-purple-800"
+                                            }
+                                          >
+                                            {consult.type.replace("-", " ")}
+                                          </Badge>
+                                          <Badge
+                                            className={
+                                              consult.status === "pending"
+                                                ? "bg-amber-100 text-amber-800"
+                                                : consult.status === "completed"
+                                                  ? "bg-green-100 text-green-800"
+                                                  : "bg-red-100 text-red-800"
+                                            }
+                                          >
+                                            {consult.status}
+                                          </Badge>
+                                        </div>
+                                        <p className="mt-2 font-medium">ID: {consult.id}</p>
+                                        <p className="text-sm text-slate-600">
+                                          {consult.date} at {consult.time}
+                                        </p>
+                                      </div>
+                                      <div className="text-right">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => router.push(`/admin/dashboard/consult/${consult.id}`)}
+                                        >
+                                          <Eye className="h-4 w-4 mr-1" /> View Details
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div className="mt-2">
+                                      <p className="text-sm font-medium">Reason:</p>
+                                      <p className="text-sm text-slate-600">{consult.reason}</p>
+                                    </div>
+                                    {consult.doctorNotes && (
+                                      <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                                        <p className="text-sm font-medium text-blue-800">Doctor Notes:</p>
+                                        <p className="text-sm text-blue-700">{consult.doctorNotes}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                            </>
+                          )}
+                        </TabsContent>
+                      ))}
+                    </Tabs>
                   </TabsContent>
                 </Tabs>
               </div>
@@ -457,7 +625,6 @@ export default function PatientsPage() {
               <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                 Close
               </Button>
-              <Button className="bg-[#00473e] hover:bg-[#00695f]">Edit Patient</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

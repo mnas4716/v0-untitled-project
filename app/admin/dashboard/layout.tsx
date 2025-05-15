@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, LayoutDashboard, CalendarDays, Users, MessageSquare, Stethoscope } from "lucide-react"
+import { Menu, LayoutDashboard, Users, MessageSquare, Stethoscope } from "lucide-react"
 import { Logo } from "@/components/logo"
 
 // Define the navigation links outside the component to prevent re-creation on each render
@@ -17,11 +17,6 @@ const dashboardNav = [
     title: "Overview",
     icon: <LayoutDashboard className="h-4 w-4" />,
     href: "/admin/dashboard",
-  },
-  {
-    title: "Appointments",
-    icon: <CalendarDays className="h-4 w-4" />,
-    href: "/admin/dashboard/appointments",
   },
   {
     title: "Consultations",

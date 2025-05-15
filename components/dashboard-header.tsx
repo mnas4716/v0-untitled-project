@@ -1,115 +1,95 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Menu } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { useState } from "react"
 
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Logo } from "@/components/logo"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { ArrowLeft, LogOut, Menu } from "lucide-react"
 
 interface DashboardHeaderProps {
+  className?: string
   activePage?: string
 }
 
-export function DashboardHeader({ activePage }: DashboardHeaderProps) {
+export function DashboardHeader({ className, activePage }: DashboardHeaderProps) {
+  const pathname = usePathname()
   const router = useRouter()
-  const navItems = [
-    { name: "Dashboard", path: "/dashboard" },
-    { name: "Appointments", path: "/dashboard/appointments" },
-    { name: "Profile", path: "/dashboard/profile" },
-    { name: "Certificates", path: "/dashboard/certificates" },
-    { name: "Prescriptions", path: "/dashboard/prescriptions" },
-  ]
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
   const handleSignOut = () => {
-    // Clear user data from localStorage
+    setIsSigningOut(true)
     if (typeof window !== "undefined") {
       localStorage.removeItem("user")
-      localStorage.removeItem("admin")
+      router.push("/")
     }
-    router.push("/")
   }
 
   return (
-    <header className="sticky top-0 z-10 bg-white border-b border-slate-200">
+    <div className={cn("border-b bg-white", className)}>
       <div className="flex h-16 items-center px-4 md:px-6">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden">
+            <Button variant="ghost" size="sm" className="mr-2 md:hidden">
               <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
+              <span className="sr-only">Toggle menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <div className="p-6 border-b border-slate-200">
-              <div className="flex items-center space-x-2 cursor-pointer" onClick={() => router.push("/")}>
-                <Logo className="h-8 w-8 text-blue-600" />
-                <span className="text-xl font-bold">FreeDoc</span>
-              </div>
-            </div>
-            <nav className="flex-1 p-4">
-              <ul className="space-y-1">
-                {navItems.map((item) => (
-                  <li key={item.name}>
-                    <Link
-                      href={item.path}
-                      className={`flex items-center space-x-3 px-4 py-2 rounded-md transition ${
-                        activePage === item.name.toLowerCase()
-                          ? "bg-blue-50 text-blue-600"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                      }`}
-                    >
-                      <span>{item.name}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-            <div className="p-4 border-t border-slate-200">
-              <button
-                onClick={handleSignOut}
-                className="flex items-center space-x-3 text-slate-600 hover:text-slate-900 px-4 py-2 rounded-md hover:bg-slate-100 w-full transition"
-              >
-                <span>Sign Out</span>
-              </button>
+          <SheetContent side="left" className="pr-0">
+            <SheetHeader className="pl-6 pb-6 pt-4">
+              <SheetTitle>Dashboard</SheetTitle>
+              <SheetDescription>Manage your healthcare needs</SheetDescription>
+            </SheetHeader>
+            {/* Mobile navigation items */}
+            <div className="grid gap-2 pl-6">
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <Link href="/dashboard">Overview</Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <Link href="/dashboard/appointments">Appointments</Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <Link href="/dashboard/prescriptions">Prescriptions</Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <Link href="/dashboard/certificates">Certificates</Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <Link href="/dashboard/profile">Profile</Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <Link href="/dashboard/settings">Settings</Link>
+              </Button>
             </div>
           </SheetContent>
         </Sheet>
 
-        <div className="flex-1 flex justify-center md:justify-start">
-          <div className="flex items-center cursor-pointer" onClick={() => router.push("/")}>
-            <Logo className="h-8 w-8 text-blue-600 mr-2" />
-            <span className="text-xl font-bold hidden md:inline">FreeDoc</span>
-          </div>
+        <div className="flex items-center gap-2">
+          <Link href="/" className="hidden md:flex">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Link>
         </div>
 
-        <nav className="hidden md:flex items-center space-x-4">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.path}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-                activePage === item.name.toLowerCase()
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              {item.name}
-            </Link>
-          ))}
-        </nav>
+        <div className="flex items-center justify-center flex-1">
+          <h1 className="text-xl font-semibold text-center">Dashboard</h1>
+        </div>
 
-        <div className="ml-auto">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={handleSignOut}
-            className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            disabled={isSigningOut}
+            className="flex items-center"
           >
+            <LogOut className="h-4 w-4 mr-2" />
             Sign Out
           </Button>
         </div>
       </div>
-    </header>
+    </div>
   )
 }

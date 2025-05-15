@@ -7,7 +7,14 @@ import { Logo } from "@/components/logo"
 import { Menu, X } from "lucide-react"
 
 interface SiteHeaderProps {
-  activePage?: "home" | "medical-certificate" | "prescription" | "telehealth" | "mental-health" | "how-it-works"
+  activePage?:
+    | "home"
+    | "medical-certificate"
+    | "prescription"
+    | "telehealth"
+    | "pathology"
+    | "mental-health"
+    | "how-it-works"
 }
 
 // Update the SiteHeader component to include the UserNav
@@ -80,6 +87,14 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
             Telehealth
           </Link>
           <Link
+            href="/pathology"
+            className={`text-slate-700 hover:text-blue-600 font-medium transition-colors ${
+              activePage === "pathology" ? "text-blue-600 border-b-2 border-blue-600 pb-1" : ""
+            }`}
+          >
+            Pathology
+          </Link>
+          <Link
             href="/how-it-works"
             className={`text-slate-700 hover:text-blue-600 font-medium transition-colors ${
               activePage === "how-it-works" ? "text-blue-600 border-b-2 border-blue-600 pb-1" : ""
@@ -128,6 +143,15 @@ export function SiteHeader({ activePage }: SiteHeaderProps) {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Telehealth
+              </Link>
+              <Link
+                href="/pathology"
+                className={`text-slate-700 hover:text-blue-600 font-medium transition-colors py-2 ${
+                  activePage === "pathology" ? "text-blue-600" : ""
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Pathology
               </Link>
               <Link
                 href="/how-it-works"

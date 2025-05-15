@@ -12,7 +12,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Logo } from "@/components/logo"
-import { setUserInStorage } from "@/lib/client-auth"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { authenticateUser } from "@/lib/auth-utils"
 
 export default function SignInPage() {
   const router = useRouter()
@@ -46,7 +47,11 @@ export default function SignInPage() {
           setGeneratedOtp(data.otp)
         }
       } else {
-        setError(data.message || "Failed to send OTP. Please try again.")
+        if (data.notRegistered) {
+          setError("This email is not registered. Please submit a consultation request first.")
+        } else {
+          setError(data.message || "Failed to send OTP. Please try again.")
+        }
       }
     } catch (err) {
       setError("An error occurred. Please try again.")
@@ -64,16 +69,14 @@ export default function SignInPage() {
     try {
       // For development, accept any 6-digit OTP
       if (process.env.NODE_ENV !== "production" && /^\d{6}$/.test(otp)) {
-        // Create a mock user
-        const user = {
-          id: "user_" + Date.now(),
-          email,
-          firstName: email.split("@")[0],
-          lastName: "",
-        }
+        // Use the shared authentication function
+        const result = await authenticateUser(email)
 
-        // Store user in localStorage
-        setUserInStorage(user)
+        if (!result.success) {
+          setError(result.message || "Authentication failed. Please try again.")
+          setIsLoading(false)
+          return
+        }
 
         // Redirect to dashboard
         router.push("/dashboard")
@@ -91,8 +94,14 @@ export default function SignInPage() {
       const data = await response.json()
 
       if (data.success) {
-        // Store user in localStorage
-        setUserInStorage(data.user)
+        // Use the shared authentication function
+        const result = await authenticateUser(email)
+
+        if (!result.success) {
+          setError(result.message || "Authentication failed. Please try again.")
+          setIsLoading(false)
+          return
+        }
 
         // Redirect to dashboard
         router.push("/dashboard")
@@ -131,7 +140,11 @@ export default function SignInPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {error && <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm">{error}</div>}
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
             {step === "email" ? (
               <form onSubmit={handleRequestOTP} className="space-y-4">
@@ -195,8 +208,8 @@ export default function SignInPage() {
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-center text-sm text-gray-500">
               Don&apos;t have an account?{" "}
-              <Link href="/auth/signup" className="text-blue-600 hover:underline">
-                Sign up
+              <Link href="/consult" className="text-blue-600 hover:underline">
+                Submit a consultation request
               </Link>
             </div>
           </CardFooter>

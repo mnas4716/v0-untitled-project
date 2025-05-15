@@ -1,334 +1,329 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cancelConsultRequest } from "@/lib/database-service"
-import { FileText, Calendar, Clock, Info, X } from "lucide-react"
-import Link from "next/link"
+import type React from "react"
 
-interface Consultation {
-  id: string
-  patientName: string
-  email: string
-  phone: string
-  date: string
-  time: string
-  reason: string
-  status: string
-  type: string
-  createdAt: string
-  details: any
-  doctorNotes?: string
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getAllConsultRequests, getDoctorById } from "@/lib/database-service"
+import { Eye, Search, FileText, MessageSquare } from "lucide-react"
+
+interface DoctorNote {
+  text: string
+  timestamp: string
+  doctorId: string
+  doctorName: string
 }
 
 export default function ConsultationsPage() {
-  const [consultations, setConsultations] = useState<Consultation[]>([])
+  const router = useRouter()
+  const [consultations, setConsultations] = useState<any[]>([])
+  const [filteredConsultations, setFilteredConsultations] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("all")
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchConsultations = () => {
+    const loadConsultations = async () => {
+      setIsLoading(true)
       try {
-        // Get consultations from localStorage
-        const storedConsultations = localStorage.getItem("consultations")
-        if (storedConsultations) {
-          const parsedConsultations = JSON.parse(storedConsultations)
-          setConsultations(parsedConsultations)
-        } else {
-          setConsultations([])
-        }
+        const allConsultations = getAllConsultRequests()
+
+        // Process doctor notes for each consultation
+        const processedConsultations = allConsultations.map((consult) => {
+          let doctorNotes: DoctorNote[] = []
+
+          if (consult.doctorNotes) {
+            try {
+              // Try to parse as JSON (new format)
+              const parsedNotes = JSON.parse(consult.doctorNotes)
+              if (Array.isArray(parsedNotes)) {
+                doctorNotes = parsedNotes
+              } else {
+                // Handle legacy format
+                doctorNotes = [
+                  {
+                    text: consult.doctorNotes,
+                    timestamp: consult.updatedAt || consult.createdAt,
+                    doctorId: consult.assignedDoctorId || "unknown",
+                    doctorName: "Doctor",
+                  },
+                ]
+              }
+            } catch (e) {
+              // If not valid JSON, treat as legacy string format
+              doctorNotes = [
+                {
+                  text: consult.doctorNotes,
+                  timestamp: consult.updatedAt || consult.createdAt,
+                  doctorId: consult.assignedDoctorId || "unknown",
+                  doctorName: "Doctor",
+                },
+              ]
+            }
+          }
+
+          // Get doctor name if assigned
+          let doctorName = ""
+          if (consult.assignedDoctorId) {
+            const doctor = getDoctorById(consult.assignedDoctorId)
+            if (doctor) {
+              doctorName = `Dr. ${doctor.firstName} ${doctor.lastName}`
+
+              // Update doctor name in notes
+              doctorNotes = doctorNotes.map((note) => {
+                if (note.doctorId === consult.assignedDoctorId) {
+                  return { ...note, doctorName }
+                }
+                return note
+              })
+            }
+          }
+
+          return {
+            ...consult,
+            doctorNotesArray: doctorNotes,
+            doctorName,
+          }
+        })
+
+        setConsultations(processedConsultations)
+        setFilteredConsultations(processedConsultations)
       } catch (error) {
-        console.error("Error fetching consultations:", error)
-        setConsultations([])
+        console.error("Error loading consultations:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    fetchConsultations()
-    // Set up an interval to check for new consultations every 30 seconds
-    const intervalId = setInterval(fetchConsultations, 30000)
-
-    return () => clearInterval(intervalId)
+    loadConsultations()
   }, [])
 
-  const handleCancelConsultation = (id: string) => {
-    // Confirm before cancelling
-    if (!window.confirm("Are you sure you want to cancel this consultation?")) {
-      return
+  // Filter consultations based on search term and active tab
+  useEffect(() => {
+    let filtered = consultations
+
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(
+        (consult) =>
+          consult.patientName.toLowerCase().includes(term) ||
+          consult.email.toLowerCase().includes(term) ||
+          consult.reason.toLowerCase().includes(term) ||
+          (consult.doctorName && consult.doctorName.toLowerCase().includes(term)),
+      )
     }
 
-    try {
-      // Cancel the consultation in the database
-      const result = cancelConsultRequest(id, "Cancelled by admin")
-
-      if (result) {
-        // Update the local state
-        setConsultations((prevConsultations) =>
-          prevConsultations.map((c) =>
-            c.id === id ? { ...c, status: "cancelled", cancelledAt: new Date().toISOString() } : c,
-          ),
-        )
-      }
-    } catch (error) {
-      console.error("Error cancelling consultation:", error)
-      alert("Failed to cancel consultation")
+    // Filter by status
+    if (activeTab !== "all") {
+      filtered = filtered.filter((consult) => consult.status === activeTab)
     }
+
+    setFilteredConsultations(filtered)
+  }, [searchTerm, activeTab, consultations])
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
   }
 
-  const pendingConsultations = consultations.filter((c) => c.status === "pending")
-  const completedConsultations = consultations.filter((c) => c.status === "completed")
-  const cancelledConsultations = consultations.filter((c) => c.status === "cancelled")
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+  }
 
-  const getTypeLabel = (type: string) => {
+  const getConsultationTypeBadge = (type: string) => {
     switch (type) {
       case "consultation":
-        return <Badge className="bg-blue-500">Consultation</Badge>
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consultation</Badge>
       case "medical-certificate":
-        return <Badge className="bg-green-500">Medical Certificate</Badge>
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Medical Certificate</Badge>
       case "prescription":
-        return <Badge className="bg-purple-500">Prescription</Badge>
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Prescription</Badge>
       default:
-        return <Badge>{type}</Badge>
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{type}</Badge>
     }
   }
-
-  return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Consultation Requests</h2>
-      </div>
-
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all">All Requests ({consultations.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pending ({pendingConsultations.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completedConsultations.length})</TabsTrigger>
-          <TabsTrigger value="cancelled">Cancelled ({cancelledConsultations.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all" className="space-y-4">
-          {consultations.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">No consultation requests found.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            consultations.map((consultation) => (
-              <ConsultationCard
-                key={consultation.id}
-                consultation={consultation}
-                onCancelConsultation={handleCancelConsultation}
-              />
-            ))
-          )}
-        </TabsContent>
-
-        <TabsContent value="pending" className="space-y-4">
-          {pendingConsultations.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">No pending consultation requests.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            pendingConsultations.map((consultation) => (
-              <ConsultationCard
-                key={consultation.id}
-                consultation={consultation}
-                onCancelConsultation={handleCancelConsultation}
-              />
-            ))
-          )}
-        </TabsContent>
-
-        <TabsContent value="completed" className="space-y-4">
-          {completedConsultations.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">No completed consultation requests.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            completedConsultations.map((consultation) => (
-              <ConsultationCard
-                key={consultation.id}
-                consultation={consultation}
-                onCancelConsultation={handleCancelConsultation}
-              />
-            ))
-          )}
-        </TabsContent>
-
-        <TabsContent value="cancelled" className="space-y-4">
-          {cancelledConsultations.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">No cancelled consultation requests.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            cancelledConsultations.map((consultation) => (
-              <ConsultationCard
-                key={consultation.id}
-                consultation={consultation}
-                onCancelConsultation={handleCancelConsultation}
-              />
-            ))
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
-}
-
-function ConsultationCard({
-  consultation,
-  onCancelConsultation,
-}: {
-  consultation: Consultation
-  onCancelConsultation: (id: string) => void
-}) {
-  const formattedDate = new Date(consultation.createdAt).toLocaleString()
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return (
-          <Badge variant="default" className="bg-amber-500">
-            Pending
-          </Badge>
-        )
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>
       case "completed":
-        return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-            Completed
-          </Badge>
-        )
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Completed</Badge>
       case "cancelled":
-        return (
-          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
-            Cancelled
-          </Badge>
-        )
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Cancelled</Badge>
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>
     }
   }
 
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case "consultation":
-        return <Badge className="bg-blue-500">Consultation</Badge>
-      case "medical-certificate":
-        return <Badge className="bg-green-500">Medical Certificate</Badge>
-      case "prescription":
-        return <Badge className="bg-purple-500">Prescription</Badge>
-      default:
-        return <Badge>{type}</Badge>
-    }
+  // Format timestamp for display
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Loading consultations...</p>
+      </div>
+    )
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle>{consultation.patientName}</CardTitle>
-            <CardDescription>
-              {consultation.email} • {consultation.phone}
-            </CardDescription>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            {getStatusBadge(consultation.status)}
-            {getTypeLabel(consultation.type)}
+    <div className="space-y-6">
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold">Consultations</h2>
+          <p className="text-muted-foreground">Manage patient consultations and requests</p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex flex-col space-y-4 md:flex-row md:items-end md:space-x-4 md:space-y-0">
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="search">Search</Label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="search"
+                type="search"
+                placeholder="Search by name, email, or reason..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={handleSearch}
+              />
+            </div>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-2 text-slate-500" />
-              <p className="text-sm font-medium">Requested Date</p>
-              <p className="text-sm text-muted-foreground ml-2">{consultation.date}</p>
-            </div>
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-2 text-slate-500" />
-              <p className="text-sm font-medium">Requested Time</p>
-              <p className="text-sm text-muted-foreground ml-2">{consultation.time}</p>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Reason for Request</p>
-            <p className="text-sm text-muted-foreground">{consultation.reason}</p>
-          </div>
 
-          {consultation.type === "medical-certificate" && consultation.details?.startDate && (
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <div>
-                <p className="text-sm font-medium">Certificate Start Date</p>
-                <p className="text-sm text-muted-foreground">{consultation.details.startDate}</p>
+        <Tabs defaultValue="all" onValueChange={handleTabChange}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+          </TabsList>
+          <TabsContent value={activeTab} className="mt-4">
+            {filteredConsultations.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-10">
+                  <FileText className="h-10 w-10 text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium">No consultations found</p>
+                  <p className="text-sm text-muted-foreground">
+                    {searchTerm
+                      ? "Try adjusting your search terms"
+                      : activeTab !== "all"
+                        ? `No ${activeTab} consultations found`
+                        : "No consultations have been created yet"}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {filteredConsultations.map((consultation) => (
+                  <Card key={consultation.id} className="overflow-hidden">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle>{consultation.patientName}</CardTitle>
+                          <CardDescription>{consultation.email}</CardDescription>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {getConsultationTypeBadge(consultation.type)}
+                          {getStatusBadge(consultation.status)}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pb-3">
+                      <div className="grid gap-4">
+                        <div>
+                          <div className="font-medium">Reason</div>
+                          <div className="text-sm text-muted-foreground line-clamp-2">{consultation.reason}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="font-medium">Date</div>
+                            <div className="text-sm text-muted-foreground">{consultation.date}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium">Time</div>
+                            <div className="text-sm text-muted-foreground">{consultation.time}</div>
+                          </div>
+                        </div>
+
+                        {/* Doctor Notes Section */}
+                        {consultation.doctorNotesArray && consultation.doctorNotesArray.length > 0 && (
+                          <div className="mt-2">
+                            <div className="font-medium flex items-center">
+                              <MessageSquare className="h-4 w-4 mr-1" />
+                              Doctor Notes
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              {consultation.doctorNotesArray.slice(0, 2).map((note: DoctorNote, index: number) => (
+                                <div key={index} className="bg-slate-50 p-2 rounded-md text-sm">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="font-medium text-xs">{note.doctorName}</span>
+                                    <span className="text-xs text-slate-500">{formatTimestamp(note.timestamp)}</span>
+                                  </div>
+                                  <p className="text-slate-700 line-clamp-2">{note.text}</p>
+                                </div>
+                              ))}
+                              {consultation.doctorNotesArray.length > 2 && (
+                                <div className="text-xs text-blue-600 mt-1">
+                                  +{consultation.doctorNotesArray.length - 2} more notes
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Attachments indicator */}
+                        {consultation.attachments && consultation.attachments.length > 0 && (
+                          <div className="text-sm text-blue-600 flex items-center">
+                            <FileText className="h-4 w-4 mr-1" />
+                            {consultation.attachments.length} attachment
+                            {consultation.attachments.length !== 1 ? "s" : ""}
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm text-muted-foreground">
+                            {consultation.doctorName ? (
+                              <span>Assigned to: {consultation.doctorName}</span>
+                            ) : (
+                              <span>Not assigned</span>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/admin/dashboard/consult/${consultation.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <div>
-                <p className="text-sm font-medium">Certificate End Date</p>
-                <p className="text-sm text-muted-foreground">{consultation.details.endDate}</p>
-              </div>
-            </div>
-          )}
-
-          {consultation.type === "prescription" && consultation.details?.medication && (
-            <div className="mt-2">
-              <p className="text-sm font-medium">Medication</p>
-              <p className="text-sm text-muted-foreground">{consultation.details.medication}</p>
-              <div className="mt-1">
-                <p className="text-sm font-medium">Delivery Option</p>
-                <p className="text-sm text-muted-foreground capitalize">{consultation.details.deliveryOption}</p>
-              </div>
-            </div>
-          )}
-
-          {consultation.details?.files && (
-            <div className="mt-2 flex items-center">
-              <FileText className="h-4 w-4 mr-2 text-blue-500" />
-              <p className="text-sm text-blue-600">Has attached documents</p>
-            </div>
-          )}
-
-          {consultation.doctorNotes && consultation.status === "completed" && (
-            <div className="mt-2 p-2 bg-blue-50 rounded-md">
-              <p className="text-sm font-medium text-blue-800">Doctor Notes:</p>
-              <p className="text-sm text-blue-700">{consultation.doctorNotes}</p>
-            </div>
-          )}
-
-          <div>
-            <p className="text-sm font-medium">Submitted</p>
-            <p className="text-sm text-muted-foreground">{formattedDate}</p>
-          </div>
-
-          <div className="mt-4 flex justify-end space-x-2">
-            {consultation.status === "pending" && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-red-600 border-red-200 hover:bg-red-50"
-                onClick={() => onCancelConsultation(consultation.id)}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Cancel
-              </Button>
             )}
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/admin/dashboard/consult/${consultation.id}`}>
-                <Info className="mr-2 h-4 w-4" />
-                See Info
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
   )
 }

@@ -13,7 +13,8 @@ import { Logo } from "@/components/logo"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { getUserByEmail, createUser } from "@/lib/database-service"
+import { authenticateUser } from "@/lib/auth-utils"
+import { getConsultRequestsByEmail } from "@/lib/database-service"
 
 export default function VerifyOTPPage() {
   const router = useRouter()
@@ -42,10 +43,10 @@ export default function VerifyOTPPage() {
     setError("")
 
     try {
-      // Check if user exists and is active
-      const existingUser = getUserByEmail(email)
-      if (existingUser && !existingUser.isActive) {
-        setError("This account has been deactivated. Please contact support.")
+      // Check if user has any consultation requests
+      const consultRequests = getConsultRequestsByEmail(email)
+      if (!consultRequests || consultRequests.length === 0) {
+        setError("This email is not registered. Please submit a consultation request first.")
         setIsLoading(false)
         return
       }
@@ -76,25 +77,14 @@ export default function VerifyOTPPage() {
     try {
       // Verify OTP
       if (otp === generatedOtp || otp === "123456") {
-        // Check if user exists
-        let user = getUserByEmail(email)
+        // Use the shared authentication function
+        const result = await authenticateUser(email)
 
-        // If user doesn't exist, create a new one
-        if (!user) {
-          user = createUser({
-            email: email,
-            firstName: email.split("@")[0],
-            lastName: "",
-            role: "user",
-          })
-        } else if (!user.isActive) {
-          setError("This account has been deactivated. Please contact support.")
+        if (!result.success) {
+          setError(result.message || "Authentication failed. Please try again.")
           setIsLoading(false)
           return
         }
-
-        // Store in localStorage
-        localStorage.setItem("user", JSON.stringify(user))
 
         // Redirect to dashboard
         router.push("/dashboard")
@@ -105,6 +95,15 @@ export default function VerifyOTPPage() {
       setError("An error occurred during verification. Please try again.")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // For development, auto-fill OTP if available
+  const handleAutoFillOtp = () => {
+    if (sentOtp) {
+      setOtp(sentOtp)
+    } else {
+      setOtp("123456") // Default test OTP
     }
   }
 
@@ -129,7 +128,16 @@ export default function VerifyOTPPage() {
             <CardContent>
               {error && (
                 <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    {error}
+                    {error.includes("not registered") && (
+                      <div className="mt-2">
+                        <Link href="/consult" className="text-white underline">
+                          Submit a consultation request
+                        </Link>
+                      </div>
+                    )}
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -138,7 +146,8 @@ export default function VerifyOTPPage() {
                 <Alert className="mb-4 bg-yellow-50 border-yellow-200">
                   <AlertDescription className="text-yellow-800">
                     <strong>Development Mode:</strong> Your OTP is{" "}
-                    <code className="bg-yellow-100 px-1 rounded">{sentOtp}</code>
+                    <code className="bg-yellow-100 px-1 rounded">{sentOtp}</code> or use{" "}
+                    <code className="bg-yellow-100 px-1 rounded">123456</code>
                   </AlertDescription>
                 </Alert>
               )}
@@ -166,7 +175,18 @@ export default function VerifyOTPPage() {
                 <form onSubmit={handleVerifyOTP}>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="otp">Verification Code</Label>
+                      <div className="flex justify-between">
+                        <Label htmlFor="otp">Verification Code</Label>
+                        {process.env.NODE_ENV !== "production" && (
+                          <button
+                            type="button"
+                            onClick={handleAutoFillOtp}
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Auto-fill (Dev Only)
+                          </button>
+                        )}
+                      </div>
                       <Input
                         id="otp"
                         placeholder="Enter 6-digit code"
@@ -193,9 +213,9 @@ export default function VerifyOTPPage() {
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <div className="text-center text-sm text-slate-500">
-                Already have an account?{" "}
-                <Link href="/auth/signin" className="text-blue-600 hover:text-blue-800">
-                  Sign in
+                Don't have an account yet?{" "}
+                <Link href="/consult" className="text-blue-600 hover:text-blue-800">
+                  Submit a consultation request
                 </Link>
               </div>
             </CardFooter>

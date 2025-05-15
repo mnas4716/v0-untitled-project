@@ -50,7 +50,7 @@ export default function PrescriptionPage() {
           <div className="md:w-1/2 flex justify-center">
             <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
               <Image
-                src="/placeholder.svg?key=ch4yg"
+                src="https://images.unsplash.com/photo-1587854692152-cbe660dbde88?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
                 alt="Prescription Service"
                 width={400}
                 height={400}
@@ -112,8 +112,52 @@ export default function PrescriptionPage() {
         </div>
       </section>
 
-      {/* Common Conditions */}
+      {/* Example Prescription Section */}
       <section className="py-16 bg-slate-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+              <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
+                <Image
+                  src="https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                  alt="Prescription Example"
+                  width={400}
+                  height={300}
+                  className="rounded-md w-full"
+                />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold mb-4 text-slate-800">Professional Prescriptions</h2>
+                <p className="text-slate-600 mb-6">
+                  Our prescriptions are professionally prepared by qualified doctors and are legally valid for use at
+                  pharmacies nationwide.
+                </p>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
+                    <span className="text-slate-700">Official doctor letterhead and signature</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
+                    <span className="text-slate-700">Detailed medication information</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
+                    <span className="text-slate-700">Dosage and usage instructions</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
+                    <span className="text-slate-700">Digital delivery for immediate use</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Common Conditions */}
+      <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">Common Conditions We Prescribe For</h2>
           <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
@@ -121,35 +165,35 @@ export default function PrescriptionPage() {
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
               <h3 className="font-semibold mb-2 text-slate-800">Allergies</h3>
               <p className="text-sm text-slate-600">Seasonal and chronic allergies</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
               <h3 className="font-semibold mb-2 text-slate-800">Asthma</h3>
               <p className="text-sm text-slate-600">Inhalers and preventative medications</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
               <h3 className="font-semibold mb-2 text-slate-800">Blood Pressure</h3>
               <p className="text-sm text-slate-600">Hypertension management</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
               <h3 className="font-semibold mb-2 text-slate-800">Diabetes</h3>
               <p className="text-sm text-slate-600">Type 2 diabetes medications</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
               <h3 className="font-semibold mb-2 text-slate-800">Skin Conditions</h3>
               <p className="text-sm text-slate-600">Eczema, acne, and rashes</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
               <h3 className="font-semibold mb-2 text-slate-800">Pain Management</h3>
               <p className="text-sm text-slate-600">Appropriate pain relief options</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
               <h3 className="font-semibold mb-2 text-slate-800">Mental Health</h3>
               <p className="text-sm text-slate-600">Depression and anxiety medications</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
               <h3 className="font-semibold mb-2 text-slate-800">Infections</h3>
               <p className="text-sm text-slate-600">Antibiotics for bacterial infections</p>
             </div>
@@ -169,12 +213,12 @@ export default function PrescriptionPage() {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-slate-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-slate-800 mb-12">How It Works</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center bg-slate-50 p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
+            <div className="text-center bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
               <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
                 <span className="text-2xl font-bold text-blue-600">1</span>
               </div>
@@ -184,7 +228,7 @@ export default function PrescriptionPage() {
               </p>
             </div>
 
-            <div className="text-center bg-slate-50 p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
+            <div className="text-center bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
               <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
                 <span className="text-2xl font-bold text-blue-600">2</span>
               </div>
@@ -195,7 +239,7 @@ export default function PrescriptionPage() {
               </p>
             </div>
 
-            <div className="text-center bg-slate-50 p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
+            <div className="text-center bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
               <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
                 <span className="text-2xl font-bold text-blue-600">3</span>
               </div>
