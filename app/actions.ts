@@ -269,8 +269,11 @@ export async function submitConsultation(formData: FormData) {
     const email = formData.get("email") as string
     const phone = formData.get("phone") as string
     const dob = formData.get("dob") as string
-    const medicareNumber = formData.get("medicareNumber") as string // Added Medicare Number
-    const address = formData.get("address") as string // Added Address
+    const medicareNumber = formData.get("medicareNumber") as string
+    const address = formData.get("address") as string
+    const suburb = formData.get("suburb") as string
+    const state = formData.get("state") as string
+    const postcode = formData.get("postcode") as string
     const reason = formData.get("reason") as string
     const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
 
@@ -290,8 +293,11 @@ export async function submitConsultation(formData: FormData) {
         lastName,
         phone,
         dob,
-        medicareNumber, // Added Medicare Number
-        address, // Added Address
+        medicareNumber,
+        address,
+        suburb,
+        state,
+        postcode,
       })
 
       if (!user) {
@@ -307,8 +313,11 @@ export async function submitConsultation(formData: FormData) {
         lastName,
         phone,
         dob,
-        medicareNumber, // Added Medicare Number
-        address, // Added Address
+        medicareNumber,
+        address,
+        suburb,
+        state,
+        postcode,
       })
     }
 
@@ -339,8 +348,11 @@ export async function submitConsultation(formData: FormData) {
         email,
         phone,
         dob,
-        medicareNumber, // Added Medicare Number
-        address, // Added Address
+        medicareNumber,
+        address,
+        suburb,
+        state,
+        postcode,
         files: fileCount > 0 ? true : false,
       },
       attachments: [],
@@ -387,8 +399,11 @@ export async function requestMedicalCertificate(formData: FormData) {
     const email = formData.get("email") as string
     const phone = formData.get("phone") as string
     const dob = formData.get("dob") as string
-    const medicareNumber = formData.get("medicareNumber") as string // Added Medicare Number
-    const address = formData.get("address") as string // Added Address
+    const medicareNumber = formData.get("medicareNumber") as string
+    const address = formData.get("address") as string
+    const suburb = formData.get("suburb") as string
+    const state = formData.get("state") as string
+    const postcode = formData.get("postcode") as string
     const reason = formData.get("reason") as string
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
@@ -410,8 +425,11 @@ export async function requestMedicalCertificate(formData: FormData) {
         lastName,
         phone,
         dob,
-        medicareNumber, // Added Medicare Number
-        address, // Added Address
+        medicareNumber,
+        address,
+        suburb,
+        state,
+        postcode,
       })
 
       if (!user) {
@@ -427,8 +445,11 @@ export async function requestMedicalCertificate(formData: FormData) {
         lastName,
         phone,
         dob,
-        medicareNumber, // Added Medicare Number
-        address, // Added Address
+        medicareNumber,
+        address,
+        suburb,
+        state,
+        postcode,
       })
     }
 
@@ -459,8 +480,11 @@ export async function requestMedicalCertificate(formData: FormData) {
         email,
         phone,
         dob,
-        medicareNumber, // Added Medicare Number
-        address, // Added Address
+        medicareNumber,
+        address,
+        suburb,
+        state,
+        postcode,
         startDate,
         endDate,
         files: fileCount > 0 ? true : false,
@@ -509,8 +533,11 @@ export async function requestPrescription(formData: FormData) {
     const email = formData.get("email") as string
     const phone = formData.get("phone") as string
     const dob = formData.get("dob") as string
-    const medicareNumber = formData.get("medicareNumber") as string // Added Medicare Number
-    const address = formData.get("address") as string // Added Address
+    const medicareNumber = formData.get("medicareNumber") as string
+    const address = formData.get("address") as string
+    const suburb = formData.get("suburb") as string
+    const state = formData.get("state") as string
+    const postcode = formData.get("postcode") as string
     const medication = formData.get("medication") as string
     const deliveryOption = formData.get("deliveryOption") as string
     const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
@@ -531,8 +558,11 @@ export async function requestPrescription(formData: FormData) {
         lastName,
         phone,
         dob,
-        medicareNumber, // Added Medicare Number
-        address, // Added Address
+        medicareNumber,
+        address,
+        suburb,
+        state,
+        postcode,
       })
 
       if (!user) {
@@ -548,8 +578,11 @@ export async function requestPrescription(formData: FormData) {
         lastName,
         phone,
         dob,
-        medicareNumber, // Added Medicare Number
-        address, // Added Address
+        medicareNumber,
+        address,
+        suburb,
+        state,
+        postcode,
       })
     }
 
@@ -580,8 +613,11 @@ export async function requestPrescription(formData: FormData) {
         email,
         phone,
         dob,
-        medicareNumber, // Added Medicare Number
-        address, // Added Address
+        medicareNumber,
+        address,
+        suburb,
+        state,
+        postcode,
         medication,
         deliveryOption,
         files: fileCount > 0 ? true : false,

@@ -247,13 +247,7 @@ export default function DashboardPage() {
                                 <p className="text-sm text-slate-600 line-clamp-2">{request.reason}</p>
                               </div>
 
-                              {/* Display doctor notes if available */}
-                              {request.doctorNotes && (
-                                <div className="mt-3 bg-blue-50 p-3 rounded-md">
-                                  <p className="text-xs font-medium text-blue-700 mb-1">Doctor's Notes:</p>
-                                  <p className="text-sm text-slate-700 line-clamp-2">{request.doctorNotes}</p>
-                                </div>
-                              )}
+                              {/* Doctor notes section removed to hide from patients */}
 
                               {/* Display file attachments if available */}
                               {request.attachments && request.attachments.length > 0 && (
@@ -385,13 +379,7 @@ export default function DashboardPage() {
                                 <p className="text-sm text-slate-600 line-clamp-2">{request.reason}</p>
                               </div>
 
-                              {/* Display doctor notes if available */}
-                              {request.doctorNotes && (
-                                <div className="mt-3 bg-blue-50 p-3 rounded-md">
-                                  <p className="text-xs font-medium text-blue-700 mb-1">Doctor's Notes:</p>
-                                  <p className="text-sm text-slate-700 line-clamp-2">{request.doctorNotes}</p>
-                                </div>
-                              )}
+                              {/* Doctor notes section removed to hide from patients */}
 
                               {/* Display file attachments if available */}
                               {request.attachments && request.attachments.length > 0 && (

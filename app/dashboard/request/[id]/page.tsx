@@ -198,7 +198,7 @@ export default function RequestDetailsPage({ params }: { params: { id: string } 
                 </div>
               )}
 
-              {/* Removed doctor notes section to hide from patients */}
+              {/* Doctor notes section removed to hide from patients */}
 
               {request.status === "completed" && request.type === "medical-certificate" && (
                 <div className="bg-green-50 p-4 rounded-md">
