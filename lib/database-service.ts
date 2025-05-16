@@ -60,6 +60,8 @@ export interface Doctor {
   firstName: string
   lastName: string
   specialty: string
+  providerNumber?: string // Added provider number
+  registrationNumber?: string // Added registration number
   phone?: string
   passwordHash: string
   password?: string // For direct password comparison in demo
@@ -282,6 +284,8 @@ export function initDatabase(): void {
             firstName: "Robert",
             lastName: "Smith",
             specialty: "General Practice",
+            providerNumber: "1234567A", // Added provider number
+            registrationNumber: "MED0001234", // Added registration number
             phone: "0498765432",
             passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "test123"
             password: "test123", // For demo purposes
@@ -296,6 +300,8 @@ export function initDatabase(): void {
             firstName: "Sarah",
             lastName: "Johnson",
             specialty: "Dermatology",
+            providerNumber: "7654321B", // Added provider number
+            registrationNumber: "MED0005678", // Added registration number
             phone: "0487654321",
             passwordHash: "$2b$10$XpC5nKJ5.NI8biIooM8TW.ZQCFrS0sILzLfbIb6KP.JQ/J9QvW7.G", // "test123"
             password: "test123", // For demo purposes
@@ -402,6 +408,15 @@ export function initDatabase(): void {
           // Add plain password for demo purposes
           if (doctor.password === undefined) {
             doctor.password = "test123"
+            updated = true
+          }
+          // Add provider number and registration number if they don't exist
+          if (doctor.providerNumber === undefined) {
+            doctor.providerNumber = `${Math.floor(1000000 + Math.random() * 9000000)}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`
+            updated = true
+          }
+          if (doctor.registrationNumber === undefined) {
+            doctor.registrationNumber = `MED${String(Math.floor(1000000 + Math.random() * 9000000)).padStart(7, "0")}`
             updated = true
           }
         })

@@ -39,6 +39,8 @@ export default function PractitionersPage() {
     lastName: "",
     title: "",
     specialty: "",
+    providerNumber: "",
+    registrationNumber: "",
     email: "",
     phone: "",
     password: "",
@@ -72,7 +74,10 @@ export default function PractitionersPage() {
         practitioner.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         practitioner.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         practitioner.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        practitioner.email.toLowerCase().includes(searchTerm.toLowerCase())
+        practitioner.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (practitioner.providerNumber && practitioner.providerNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (practitioner.registrationNumber &&
+          practitioner.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase()))
 
       const matchesStatus =
         statusFilter === "all" ||
@@ -126,6 +131,8 @@ export default function PractitionersPage() {
         lastName: formData.lastName,
         email: formData.email,
         specialty: formData.specialty || "General Practice",
+        providerNumber: formData.providerNumber,
+        registrationNumber: formData.registrationNumber,
         phone: formData.phone,
         status: formData.status as "active" | "inactive" | "on leave",
         password: formData.password, // Pass the password to the createDoctor function
@@ -138,6 +145,8 @@ export default function PractitionersPage() {
         lastName: "",
         title: "",
         specialty: "",
+        providerNumber: "",
+        registrationNumber: "",
         email: "",
         phone: "",
         password: "",
@@ -260,6 +269,27 @@ export default function PractitionersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="providerNumber">Provider Number</Label>
+                  <Input
+                    id="providerNumber"
+                    placeholder="Provider number"
+                    value={formData.providerNumber}
+                    onChange={(e) => setFormData({ ...formData, providerNumber: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="registrationNumber">Registration Number</Label>
+                  <Input
+                    id="registrationNumber"
+                    placeholder="Registration number"
+                    value={formData.registrationNumber}
+                    onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
@@ -378,7 +408,7 @@ export default function PractitionersPage() {
                     />
                   </TableHead>
                   <TableHead>Practitioner</TableHead>
-                  <TableHead>Specialty</TableHead>
+                  <TableHead>Provider Number</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -427,7 +457,7 @@ export default function PractitionersPage() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{practitioner.specialty}</TableCell>
+                      <TableCell>{practitioner.providerNumber || "Not provided"}</TableCell>
                       <TableCell>
                         <div className="text-sm">{practitioner.email}</div>
                         <div className="text-xs text-gray-500">{practitioner.phone}</div>
