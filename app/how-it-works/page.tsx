@@ -1,224 +1,151 @@
-import Image from "next/image"
-import Link from "next/link"
-import { ArrowRight, CheckCircle, Phone, FileText, Clock } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
+import { CheckCircle2, FileText, UserCheck, MessageSquare, ShieldCheck, Clock, Users } from "lucide-react"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { ComingSoonBanner } from "../components/coming-soon-banner"
+import { FreedocHeader } from "../components/freedoc-header"
+import { FreedocFooter } from "../components/freedoc-footer"
+
+const generalSteps = [
+  {
+    number: 1,
+    icon: <FileText className="h-12 w-12 text-freedoc-blue mb-4" />,
+    title: "Select Your Service",
+    description:
+      "Choose the service you need from our website – whether it's an online prescription, medical certificate, mental health support, telehealth consultation, or pathology referral.",
+  },
+  {
+    number: 2,
+    icon: <UserCheck className="h-12 w-12 text-freedoc-blue mb-4" />,
+    title: "Complete Online Form/Assessment",
+    description:
+      "Fill out a secure online form relevant to your chosen service. Provide accurate information about your health, symptoms, and needs. This helps our Partner Doctors assess your request.",
+  },
+  {
+    number: 3,
+    icon: <MessageSquare className="h-12 w-12 text-freedoc-blue mb-4" />,
+    title: "Doctor Review & Consultation",
+    description:
+      "An AHPRA registered Australian Partner Doctor will review your submission. For some services like telehealth, this may involve a direct video or phone consultation. For others, the review is based on your form.",
+  },
+  {
+    number: 4,
+    icon: <CheckCircle2 className="h-12 w-12 text-freedoc-blue mb-4" />,
+    title: "Receive Outcome/Service",
+    description:
+      "If your request is approved and deemed appropriate by the doctor, you'll receive your prescription, medical certificate, referral, or advice directly through our secure platform or to your email/phone. All services are free.",
+  },
+]
+
+const whatToExpect = [
+  {
+    icon: <ShieldCheck className="h-8 w-8 text-freedoc-blue mr-3" />,
+    title: "Privacy and Security",
+    description: "Your personal and health information is protected with industry-standard security measures.",
+  },
+  {
+    icon: <Clock className="h-8 w-8 text-freedoc-blue mr-3" />,
+    title: "Timely Responses",
+    description: "Our Partner Doctors aim to review requests promptly, typically within a few hours.",
+  },
+  {
+    icon: <Users className="h-8 w-8 text-freedoc-blue mr-3" />,
+    title: "Professional Care",
+    description: "All consultations and reviews are conducted by AHPRA registered Australian doctors.",
+  },
+]
+
+const faqsHIW = [
+  {
+    question: "Is Freedoc really free?",
+    answer:
+      "Yes, all consultations and services provided directly by Freedoc Partner Doctors through our platform are completely free. This includes online prescriptions, medical certificates, mental health support consultations, telehealth consultations, and pathology referrals.",
+  },
+  {
+    question: "Who are the doctors?",
+    answer:
+      "Our Partner Doctors are all AHPRA (Australian Health Practitioner Regulation Agency) registered medical practitioners based in Australia, with experience in providing telehealth services.",
+  },
+  {
+    question: "What if my request is not approved?",
+    answer:
+      "The doctor will assess your request based on clinical appropriateness and safety. If your request cannot be fulfilled online, the doctor may provide advice or recommend an in-person consultation with your local GP. There is no charge even if your request is not approved.",
+  },
+  {
+    question: "How do I get started?",
+    answer:
+      "Simply navigate to the service you require from our homepage or menu, and follow the prompts to complete the online form. The process is designed to be quick and straightforward.",
+  },
+]
 
 export default function HowItWorksPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <SiteHeader activePage="how-it-works" />
+    <div className="bg-white text-freedoc-dark">
+      <FreedocHeader />
+      <div className="sticky top-[80px] z-30">
+        <ComingSoonBanner />
+      </div>
 
-      {/* Hero Section */}
-      <section className="bg-blue-600 text-white">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl font-bold mb-6">How freedoc Works</h1>
-            <p className="text-xl text-blue-100 mb-8">
-              Getting the healthcare you need is simple, fast, and completely free with freedoc.
-            </p>
-            <Link href="/consult">
-              <Button
-                size="lg"
-                className="bg-white hover:bg-blue-50 text-blue-600 transition-all transform hover:-translate-y-1"
-              >
-                Start Free Consultation
-              </Button>
-            </Link>
+      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold text-freedoc-dark mb-4">How Freedoc Works</h1>
+          <p className="text-lg text-freedoc-secondary max-w-2xl mx-auto">
+            Accessing free online healthcare services with Freedoc is simple and convenient. Here’s a general overview
+            of our process.
+          </p>
+        </div>
+      </section>
+
+      <section className="py-16 lg:py-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {generalSteps.map((step) => (
+              <div key={step.number} className="p-6 bg-white rounded-lg shadow-md border border-slate-200 text-center">
+                <div className="flex justify-center items-center mb-4">{step.icon}</div>
+                <h3 className="text-xl font-semibold text-freedoc-dark mb-2">
+                  Step {step.number}: {step.title}
+                </h3>
+                <p className="text-freedoc-secondary text-sm">{step.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Process Flow */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mb-24">
-              <div>
-                <h2 className="text-3xl font-bold mb-4 text-slate-800">Book Your Consultation</h2>
-                <p className="text-slate-600 mb-6">
-                  Choose the type of service you need and fill in a simple form with your health concern. You can select
-                  from medical certificates, prescriptions, or general consultations.
-                </p>
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Quick and easy registration with just your email</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Secure and private account creation</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Multiple service options available 24/7</span>
-                  </li>
-                </ul>
-                <div className="mt-8">
-                  <Link href="/consult">
-                    <Button className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1">
-                      Book Consultation <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
+      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-12 text-center">What to Expect</h2>
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {whatToExpect.map((item) => (
+              <div key={item.title} className="p-6 bg-white rounded-lg shadow-md">
+                <div className="flex items-center mb-3">
+                  {item.icon}
+                  <h3 className="text-xl font-semibold text-freedoc-dark">{item.title}</h3>
                 </div>
+                <p className="text-freedoc-secondary text-sm">{item.description}</p>
               </div>
-              <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
-                <Image
-                  src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                  alt="Book consultation"
-                  width={400}
-                  height={300}
-                  className="rounded-md w-full"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mb-24">
-              <div className="order-2 md:order-1 bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
-                <Image
-                  src="https://images.unsplash.com/photo-1551076805-e1869033e561?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                  alt="Doctor consultation"
-                  width={400}
-                  height={300}
-                  className="rounded-md w-full"
-                />
-              </div>
-              <div className="order-1 md:order-2">
-                <div className="inline-flex items-center bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium mb-4">
-                  <Phone className="h-4 w-4 mr-1" />
-                  <span>Within 1 hour</span>
-                </div>
-                <h2 className="text-3xl font-bold mb-4 text-slate-800">Speak With a Doctor</h2>
-                <p className="text-slate-600 mb-6">
-                  After booking, one of our qualified doctors will call you within 1 hour. They'll discuss your health
-                  concerns, ask relevant questions, and provide professional medical advice.
-                </p>
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Quick response from qualified doctors</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Thorough assessment of your condition</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Personalized medical advice</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mb-24">
-              <div>
-                <div className="inline-flex items-center bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium mb-4">
-                  <FileText className="h-4 w-4 mr-1" />
-                  <span>Same-day service</span>
-                </div>
-                <h2 className="text-3xl font-bold mb-4 text-slate-800">Receive Your Documents</h2>
-                <p className="text-slate-600 mb-6">
-                  After your consultation, you'll receive any necessary documents directly to your email. This includes
-                  prescriptions, medical certificates, referrals, or treatment plans.
-                </p>
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Digital documents delivered to your email</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Legally valid prescriptions and certificates</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Access your documents anytime in your dashboard</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
-                <Image
-                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                  alt="Medical documents"
-                  width={400}
-                  height={300}
-                  className="rounded-md w-full"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-              <div className="order-2 md:order-1 bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
-                <Image
-                  src="https://images.unsplash.com/photo-1584982751601-97dcc096659c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                  alt="Follow-up care"
-                  width={400}
-                  height={300}
-                  className="rounded-md w-full"
-                />
-              </div>
-              <div className="order-1 md:order-2">
-                <div className="inline-flex items-center bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium mb-4">
-                  <Clock className="h-4 w-4 mr-1" />
-                  <span>Ongoing support</span>
-                </div>
-                <h2 className="text-3xl font-bold mb-4 text-slate-800">Follow-Up Care</h2>
-                <p className="text-slate-600 mb-6">
-                  Your care doesn't end after the consultation. We provide follow-up support to ensure your treatment is
-                  effective. You can access your medical history and request additional consultations if needed.
-                </p>
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Access to your complete medical history</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Easy follow-up consultations</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Continuous care for chronic conditions</span>
-                  </li>
-                </ul>
-                <div className="mt-8">
-                  <Link href="/auth/signin">
-                    <Button className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1">
-                      Access Your Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-slate-100">
-        <div className="container mx-auto px-4">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 md:p-12 shadow-lg">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl font-bold text-white mb-4">Ready to get started?</h2>
-              <p className="text-blue-100 mb-8">
-                Experience healthcare that's designed around your needs. Book your consultation today and speak with a
-                doctor within an hour.
-              </p>
-              <Link href="/consult">
-                <Button
-                  size="lg"
-                  className="bg-white text-blue-600 hover:bg-blue-50 transition-all transform hover:-translate-y-1"
-                >
-                  Book Your Consultation
-                </Button>
-              </Link>
-            </div>
-          </div>
+      <section className="py-16 lg:py-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-12 text-center">
+            General FAQs about Freedoc
+          </h2>
+          <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
+            {faqsHIW.map((faq, index) => (
+              <AccordionItem key={index} value={`item-${index}`} className="border-b last:border-b-0">
+                <AccordionTrigger className="text-lg hover:no-underline text-left py-4">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-freedoc-secondary text-base pb-4">{faq.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
 
-      <SiteFooter />
+      <FreedocFooter />
     </div>
   )
 }

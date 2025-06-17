@@ -1,281 +1,204 @@
+import { CheckCircle2, FileText, UserCheck, ClipboardList, Clock, ShieldCheck, BadgeDollarSign } from "lucide-react"
 import Image from "next/image"
-import Link from "next/link"
-import { CheckCircle, ArrowRight, Pill, Clock, Truck } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { ComingSoonBanner } from "../components/coming-soon-banner"
+import { FreedocHeader } from "../components/freedoc-header"
+import { FreedocFooter } from "../components/freedoc-footer"
+
+const trustBadges = [
+  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2" />, text: "100% Secure & Private" },
+  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2" />, text: "AHPRA Registered Doctors" },
+  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2" />, text: "Completely Free Service" },
+]
+
+const howItWorksSteps = [
+  {
+    icon: <FileText className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Complete online form",
+    description: "Fill out our quick online form with your medical history and prescription details.",
+  },
+  {
+    icon: <UserCheck className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Doctor reviews your request",
+    description: "An Australian Partner Doctor will review your request and assess your suitability.",
+  },
+  {
+    icon: <ClipboardList className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Prescription sent to your pharmacy",
+    description: "If suitable, your script will be sent directly to your preferred pharmacy or to your phone.",
+  },
+]
+
+const commonConditions = [
+  "Asthma",
+  "Blood Pressure",
+  "Contraception",
+  "Diabetes",
+  "Eczema",
+  "Hair Loss",
+  "Migraine",
+  "Reflux",
+  "Sleep Issues",
+  "Thyroid",
+  "UTI",
+  "Weight Loss",
+]
+
+const whyChooseFreedoc = [
+  {
+    icon: <Clock className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Convenient & Fast",
+    description: "Skip the waiting room. Request your script online, anytime, anywhere.",
+  },
+  {
+    icon: <BadgeDollarSign className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Absolutely Free",
+    description: "No consultation fees, no hidden charges. Access healthcare without the cost.",
+  },
+  {
+    icon: <ShieldCheck className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Qualified Doctors",
+    description: "Our Partner Doctors are AHPRA registered and based in Australia.",
+  },
+]
+
+const faqs = [
+  {
+    question: "How does the free online prescription service work?",
+    answer:
+      "Our online prescription service allows you to request a repeat prescription by completing a secure online form. An Australian Partner Doctor reviews your request and, if appropriate, sends the prescription to your chosen pharmacy or directly to your phone, all free of charge.",
+  },
+  {
+    question: "Is it safe to get a prescription online?",
+    answer:
+      "Yes, it is safe when conducted through a reputable platform like Freedoc. Our Partner Doctors are AHPRA registered and follow strict medical guidelines. We use secure technology to protect your personal information.",
+  },
+  {
+    question: "What medications can I get prescribed?",
+    answer:
+      "We can help with renewals for many common medications for stable, ongoing conditions. We do not prescribe controlled drugs, S8 medications, or drugs of addiction. The doctor will assess your suitability based on your medical history.",
+  },
+  {
+    question: "How long does it take to get my prescription?",
+    answer:
+      "Most requests are reviewed by a doctor within a few hours, though it can sometimes take up to 24 hours. Once approved, the prescription is sent to your pharmacy or phone promptly.",
+  },
+]
 
 export default function PrescriptionPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <SiteHeader activePage="prescription" />
+    <div className="bg-white text-freedoc-dark">
+      <FreedocHeader />
+      <div className="sticky top-[80px] z-30">
+        <ComingSoonBanner />
+      </div>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-        <div className="container mx-auto px-4 py-16 md:py-20 flex flex-col md:flex-row items-center">
-          <div className="md:w-1/2 mb-10 md:mb-0">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Online Prescription Service</h2>
-            <p className="text-lg mb-6">
-              Get your prescriptions quickly and conveniently from the comfort of your home. Our qualified doctors can
-              prescribe a wide range of medications for various conditions.
-            </p>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
-                <span>Convenient online consultations</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
-                <span>Legally valid prescriptions</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
-                <span>Multiple delivery options</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
-                <span>Secure and confidential service</span>
-              </li>
-            </ul>
-            <Link href="/prescription/request">
-              <Button
-                size="lg"
-                className="bg-white hover:bg-blue-50 text-blue-600 transition-all transform hover:-translate-y-1"
-              >
-                Request Prescription
-              </Button>
-            </Link>
-          </div>
-
-          <div className="md:w-1/2 flex justify-center">
-            <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
+      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl sm:text-5xl font-bold text-freedoc-dark mb-4">Online Prescriptions</h1>
+              <p className="text-lg text-freedoc-secondary mb-6">
+                Get your script renewed online by one of our Australian Partner Doctors.
+              </p>
+              <p className="text-2xl font-semibold text-freedoc-blue mb-8">100% Free Consultation</p>
+              <div className="mt-10 space-y-3">
+                {trustBadges.map((badge) => (
+                  <div key={badge.text} className="flex items-center text-freedoc-secondary">
+                    {badge.icon}
+                    <span>{badge.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-center">
               <Image
-                src="https://images.unsplash.com/photo-1587854692152-cbe660dbde88?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                alt="Prescription Service"
-                width={400}
-                height={400}
-                className="rounded-md w-full h-auto"
+                src="/images/prescription-hero.png"
+                alt="Pharmacist helping a customer"
+                width={550}
+                height={450}
+                className="rounded-lg shadow-xl object-cover"
               />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">Prescription Services</h2>
-          <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
-            Our doctors can prescribe medications for a variety of conditions through secure online consultations.
+      <section className="py-16 lg:py-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-4">How it works</h2>
+          <p className="text-lg text-freedoc-secondary mb-12 max-w-2xl mx-auto">
+            Get your prescription in 3 simple steps
           </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Pill className="h-8 w-8 text-blue-600" />
+          <div className="grid md:grid-cols-3 gap-8">
+            {howItWorksSteps.map((step, index) => (
+              <div key={step.title} className="p-8 bg-white rounded-lg shadow-md border border-slate-200">
+                <div className="flex justify-center items-center mb-4">{step.icon}</div>
+                <h3 className="text-xl font-semibold text-freedoc-dark mb-2">
+                  {index + 1}. {step.title}
+                </h3>
+                <p className="text-freedoc-secondary">{step.description}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">New Prescriptions</h3>
-              <p className="text-slate-600 mb-6">
-                Get a new prescription for a condition after consultation with one of our qualified doctors.
-              </p>
-              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
-                Most Common
-              </span>
-            </div>
-
-            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Clock className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Repeat Prescriptions</h3>
-              <p className="text-slate-600 mb-6">
-                Easily renew your existing prescriptions without needing to visit a doctor in person.
-              </p>
-              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
-                Fast Service
-              </span>
-            </div>
-
-            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Truck className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Medication Delivery</h3>
-              <p className="text-slate-600 mb-6">
-                Have your prescribed medications delivered directly to your home or sent to your local pharmacy.
-              </p>
-              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
-                Convenient
-              </span>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Example Prescription Section */}
-      <section className="py-16 bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-              <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
-                <Image
-                  src="https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                  alt="Prescription Example"
-                  width={400}
-                  height={300}
-                  className="rounded-md w-full"
-                />
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold mb-4 text-slate-800">Professional Prescriptions</h2>
-                <p className="text-slate-600 mb-6">
-                  Our prescriptions are professionally prepared by qualified doctors and are legally valid for use at
-                  pharmacies nationwide.
-                </p>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Official doctor letterhead and signature</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Detailed medication information</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Dosage and usage instructions</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
-                    <span className="text-slate-700">Digital delivery for immediate use</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Common Conditions */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">Common Conditions We Prescribe For</h2>
-          <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
-            Our doctors can prescribe medications for a wide range of conditions.
+      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-4">Common Conditions We Treat</h2>
+          <p className="text-lg text-freedoc-secondary mb-12 max-w-2xl mx-auto">
+            We can help with a wide range of common conditions and repeat prescriptions.
           </p>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Allergies</h3>
-              <p className="text-sm text-slate-600">Seasonal and chronic allergies</p>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Asthma</h3>
-              <p className="text-sm text-slate-600">Inhalers and preventative medications</p>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Blood Pressure</h3>
-              <p className="text-sm text-slate-600">Hypertension management</p>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Diabetes</h3>
-              <p className="text-sm text-slate-600">Type 2 diabetes medications</p>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Skin Conditions</h3>
-              <p className="text-sm text-slate-600">Eczema, acne, and rashes</p>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Pain Management</h3>
-              <p className="text-sm text-slate-600">Appropriate pain relief options</p>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Mental Health</h3>
-              <p className="text-sm text-slate-600">Depression and anxiety medications</p>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Infections</h3>
-              <p className="text-sm text-slate-600">Antibiotics for bacterial infections</p>
-            </div>
-          </div>
-
-          <div className="text-center mt-12">
-            <p className="text-slate-600 mb-4">
-              Not sure if we can prescribe for your condition? Contact us or start a consultation to find out.
-            </p>
-            <Link href="/prescription/request">
-              <Button className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1">
-                Request Prescription <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+            {commonConditions.map((condition) => (
+              <span
+                key={condition}
+                className="bg-blue-100 text-freedoc-blue px-4 py-2 rounded-full text-sm font-medium shadow-sm"
+              >
+                {condition}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-16 bg-slate-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-slate-800 mb-12">How It Works</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-blue-600">1</span>
+      <section className="py-16 lg:py-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-12">
+            Why Choose Freedoc for Online Prescriptions?
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {whyChooseFreedoc.map((reason) => (
+              <div key={reason.title} className="p-6">
+                <div className="flex justify-center items-center mb-4">{reason.icon}</div>
+                <h3 className="text-xl font-semibold text-freedoc-dark mb-2">{reason.title}</h3>
+                <p className="text-freedoc-secondary">{reason.description}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Request a Prescription</h3>
-              <p className="text-slate-600">
-                Fill out our simple online form with your details and the medication you need.
-              </p>
-            </div>
-
-            <div className="text-center bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-blue-600">2</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Doctor Review</h3>
-              <p className="text-slate-600">
-                One of our qualified doctors will review your request and may contact you for additional information if
-                needed.
-              </p>
-            </div>
-
-            <div className="text-center bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-blue-600">3</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Receive Your Prescription</h3>
-              <p className="text-slate-600">
-                If approved, your prescription will be sent to your chosen pharmacy or delivered directly to your home.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-slate-100">
-        <div className="container mx-auto px-4">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 md:p-12 shadow-lg">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl font-bold text-white mb-4">Need a prescription?</h2>
-              <p className="text-blue-100 mb-8">
-                Our doctors can provide you with a valid prescription quickly and conveniently. Start your request
-                today.
-              </p>
-              <Link href="/prescription/request">
-                <Button
-                  size="lg"
-                  className="bg-white text-blue-600 hover:bg-blue-50 transition-all transform hover:-translate-y-1"
-                >
-                  Request Prescription
-                </Button>
-              </Link>
-            </div>
-          </div>
+      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-12 text-center">
+            Frequently Asked Questions
+          </h2>
+          <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
+            {faqs.map((faq, index) => (
+              <AccordionItem key={index} value={`item-${index}`} className="border-b last:border-b-0">
+                <AccordionTrigger className="text-lg hover:no-underline text-left py-4">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-freedoc-secondary text-base pb-4">{faq.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
 
-      <SiteFooter />
+      <FreedocFooter />
     </div>
   )
 }

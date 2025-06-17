@@ -1,239 +1,191 @@
+import { CheckCircle2, FileText, UserCheck, MessageSquare, ShieldCheck, Users, Smile } from "lucide-react"
 import Image from "next/image"
-import Link from "next/link"
-import { CheckCircle, ArrowRight, Brain, Heart, Users, Shield } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { ComingSoonBanner } from "../components/coming-soon-banner"
+import { FreedocHeader } from "../components/freedoc-header"
+import { FreedocFooter } from "../components/freedoc-footer"
+
+const trustBadges = [
+  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2" />, text: "Confidential & Secure Platform" },
+  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2" />, text: "AHPRA Registered Doctors" },
+  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2" />, text: "Completely Free Service" },
+]
+
+const howItWorksStepsMentalHealth = [
+  {
+    icon: <FileText className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Complete online assessment",
+    description: "Fill out a confidential questionnaire about your mental health concerns and history.",
+  },
+  {
+    icon: <UserCheck className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Doctor reviews your assessment",
+    description: "An Australian Partner Doctor specializing in mental health will review your information.",
+  },
+  {
+    icon: <MessageSquare className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Receive your plan or referral",
+    description: "If appropriate, receive guidance, a mental health care plan, or a referral for further support.",
+  },
+]
+
+const areasWeAssist = [
+  "Stress & Anxiety",
+  "Low Mood & Depression",
+  "Sleep Difficulties",
+  "Relationship Issues",
+  "Grief & Loss",
+  "General Wellbeing",
+]
+
+const whyChooseFreedocMH = [
+  {
+    icon: <Users className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Accessible Support",
+    description: "Get initial mental health guidance without barriers, from the comfort of your home.",
+  },
+  {
+    icon: <ShieldCheck className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Confidential & Free",
+    description: "Our platform is secure, and consultations for mental health support are entirely free.",
+  },
+  {
+    icon: <Smile className="h-10 w-10 text-freedoc-blue mb-3" />,
+    title: "Professional Guidance",
+    description: "Connect with AHPRA registered doctors who can provide advice and referrals if needed.",
+  },
+]
+
+const faqsMH = [
+  {
+    question: "What kind of mental health support can I get?",
+    answer:
+      "Our Partner Doctors can provide initial assessments, guidance for common mental health concerns like stress and anxiety, discuss potential coping strategies, and help determine if a mental health care plan or referral to a specialist is appropriate. This service is free.",
+  },
+  {
+    question: "Is this service a replacement for therapy?",
+    answer:
+      "No, Freedoc provides initial consultations and guidance. For ongoing therapy or specialized psychiatric care, our doctors can provide referrals to appropriate services. Our goal is to make the first step in seeking help easier and free.",
+  },
+  {
+    question: "How is my privacy protected?",
+    answer:
+      "We use a secure platform and adhere to strict privacy policies to ensure your personal and health information is kept confidential, in line with Australian healthcare regulations.",
+  },
+]
 
 export default function MentalHealthPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <SiteHeader activePage="mental-health" />
+    <div className="bg-white text-freedoc-dark">
+      <FreedocHeader />
+      <div className="sticky top-[80px] z-30">
+        <ComingSoonBanner />
+      </div>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-        <div className="container mx-auto px-4 py-16 md:py-20 flex flex-col md:flex-row items-center">
-          <div className="md:w-1/2 mb-10 md:mb-0">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Online Mental Health Support</h2>
-            <p className="text-lg mb-6">
-              Access professional mental health care from the comfort of your home. Our experienced doctors provide
-              confidential support for a range of mental health concerns.
-            </p>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
-                <span>Confidential and private consultations</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
-                <span>Experienced mental health professionals</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
-                <span>Prescription medications when appropriate</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
-                <span>Ongoing support and follow-up care</span>
-              </li>
-            </ul>
-            <Link href="/consult">
-              <Button
-                size="lg"
-                className="bg-white hover:bg-blue-50 text-blue-600 transition-all transform hover:-translate-y-1"
-              >
-                Book Mental Health Consultation
-              </Button>
-            </Link>
-          </div>
-
-          <div className="md:w-1/2 flex justify-center">
-            <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
+      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl sm:text-5xl font-bold text-freedoc-dark mb-4">Online Mental Health Support</h1>
+              <p className="text-lg text-freedoc-secondary mb-6">
+                Access mental health assessments and guidance from Australian Partner Doctors, free of charge.
+              </p>
+              <p className="text-2xl font-semibold text-freedoc-blue mb-8">100% Free Consultation</p>
+              <div className="mt-10 space-y-3">
+                {trustBadges.map((badge) => (
+                  <div key={badge.text} className="flex items-center text-freedoc-secondary">
+                    {badge.icon}
+                    <span>{badge.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-center">
               <Image
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                alt="Mental Health Support"
-                width={400}
-                height={400}
-                className="rounded-md w-full h-auto"
+                src="/images/mental-health-hero.png"
+                alt="Person finding peace in nature"
+                width={550}
+                height={450}
+                className="rounded-lg shadow-xl object-cover"
               />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">Mental Health Services</h2>
-          <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
-            Our doctors can help with a wide range of mental health concerns through confidential online consultations.
+      <section className="py-16 lg:py-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-4">How Our Mental Health Service Works</h2>
+          <p className="text-lg text-freedoc-secondary mb-12 max-w-2xl mx-auto">
+            A simple, confidential process to access mental health support online.
           </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Brain className="h-8 w-8 text-blue-600" />
+          <div className="grid md:grid-cols-3 gap-8">
+            {howItWorksStepsMentalHealth.map((step, index) => (
+              <div key={step.title} className="p-8 bg-white rounded-lg shadow-md border border-slate-200">
+                <div className="flex justify-center items-center mb-4">{step.icon}</div>
+                <h3 className="text-xl font-semibold text-freedoc-dark mb-2">
+                  {index + 1}. {step.title}
+                </h3>
+                <p className="text-freedoc-secondary">{step.description}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Anxiety & Depression</h3>
-              <p className="text-slate-600 mb-6">
-                Get support for anxiety, depression, and mood disorders with evidence-based treatments and medication
-                management.
-              </p>
-              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
-                Free Consultation
-              </span>
-            </div>
-
-            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Heart className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Stress Management</h3>
-              <p className="text-slate-600 mb-6">
-                Learn effective strategies to manage stress, improve sleep, and enhance your overall wellbeing.
-              </p>
-              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
-                Free Consultation
-              </span>
-            </div>
-
-            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Users className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Relationship Issues</h3>
-              <p className="text-slate-600 mb-6">
-                Address relationship challenges, communication problems, and family concerns with professional guidance.
-              </p>
-              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
-                Free Consultation
-              </span>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Common Conditions */}
-      <section className="py-16 bg-slate-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">Mental Health Conditions We Treat</h2>
-          <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
-            Our doctors are experienced in treating a wide range of mental health conditions.
+      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-4">Areas We Can Assist With</h2>
+          <p className="text-lg text-freedoc-secondary mb-12 max-w-2xl mx-auto">
+            Our doctors can provide initial guidance for a range of concerns.
           </p>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Anxiety Disorders</h3>
-              <p className="text-sm text-slate-600">Generalized anxiety, panic attacks, phobias</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Depression</h3>
-              <p className="text-sm text-slate-600">Major depression, persistent depressive disorder</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">ADHD</h3>
-              <p className="text-sm text-slate-600">Attention deficit hyperactivity disorder</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Insomnia</h3>
-              <p className="text-sm text-slate-600">Sleep disorders and sleep management</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">PTSD</h3>
-              <p className="text-sm text-slate-600">Post-traumatic stress disorder</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">OCD</h3>
-              <p className="text-sm text-slate-600">Obsessive-compulsive disorder</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Bipolar Disorder</h3>
-              <p className="text-sm text-slate-600">Mood stabilization and management</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
-              <h3 className="font-semibold mb-2 text-slate-800">Stress</h3>
-              <p className="text-sm text-slate-600">Work-related stress and burnout</p>
-            </div>
-          </div>
-
-          <div className="text-center mt-12">
-            <p className="text-slate-600 mb-4">
-              Not sure if we can help with your condition? Contact us or start a consultation to find out.
-            </p>
-            <Link href="/consult">
-              <Button className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1">
-                Start Free Consultation <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+            {areasWeAssist.map((area) => (
+              <span
+                key={area}
+                className="bg-blue-100 text-freedoc-blue px-4 py-2 rounded-full text-sm font-medium shadow-sm"
+              >
+                {area}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-slate-800 mb-12">Our Approach to Mental Health Care</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center bg-slate-50 p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <Shield className="h-8 w-8 text-blue-600" />
+      <section className="py-16 lg:py-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-12">
+            Why Choose Freedoc for Mental Health Support?
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {whyChooseFreedocMH.map((reason) => (
+              <div key={reason.title} className="p-6">
+                <div className="flex justify-center items-center mb-4">{reason.icon}</div>
+                <h3 className="text-xl font-semibold text-freedoc-dark mb-2">{reason.title}</h3>
+                <p className="text-freedoc-secondary">{reason.description}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Confidential & Private</h3>
-              <p className="text-slate-600">
-                Your privacy is our priority. All consultations are completely confidential and conducted in a secure
-                environment.
-              </p>
-            </div>
-
-            <div className="text-center bg-slate-50 p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <Brain className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Personalized Care</h3>
-              <p className="text-slate-600">
-                We develop individualized treatment plans tailored to your specific needs, goals, and circumstances.
-              </p>
-            </div>
-
-            <div className="text-center bg-slate-50 p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <Heart className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-slate-800">Ongoing Support</h3>
-              <p className="text-slate-600">
-                We provide continuous support with follow-up appointments and check-ins to monitor your progress and
-                adjust treatment as needed.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-slate-100">
-        <div className="container mx-auto px-4">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 md:p-12 shadow-lg">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl font-bold text-white mb-4">Ready to take the first step?</h2>
-              <p className="text-blue-100 mb-8">
-                Our mental health professionals are here to help. Book a consultation today and start your journey to
-                better mental wellbeing.
-              </p>
-              <Link href="/consult">
-                <Button
-                  size="lg"
-                  className="bg-white text-blue-600 hover:bg-blue-50 transition-all transform hover:-translate-y-1"
-                >
-                  Book Mental Health Consultation
-                </Button>
-              </Link>
-            </div>
-          </div>
+      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-12 text-center">Mental Health FAQs</h2>
+          <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
+            {faqsMH.map((faq, index) => (
+              <AccordionItem key={index} value={`item-${index}`} className="border-b last:border-b-0">
+                <AccordionTrigger className="text-lg hover:no-underline text-left py-4">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-freedoc-secondary text-base pb-4">{faq.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
 
-      <SiteFooter />
+      <FreedocFooter />
     </div>
   )
 }
