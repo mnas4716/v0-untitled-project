@@ -10,7 +10,6 @@ import {
   Baby,
   BadgeCheckIcon as CheckBadge,
 } from "lucide-react"
-import Image from "next/image"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { ComingSoonBanner } from "../components/coming-soon-banner"
 import { FreedocHeader } from "../components/freedoc-header"
@@ -98,31 +97,20 @@ export default function MedicalCertificatePage() {
       </div>
 
       <section className="py-16 lg:py-24 bg-freedoc-blue-light">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl sm:text-5xl font-bold text-freedoc-dark mb-4">Online Medical Certificates</h1>
-              <p className="text-lg text-freedoc-secondary mb-6">
-                Get a medical certificate online from an Australian Partner Doctor.
-              </p>
-              <p className="text-2xl font-semibold text-freedoc-blue mb-8">100% Free Certificate</p>
-              <div className="mt-10 space-y-3">
-                {trustBadges.map((badge) => (
-                  <div key={badge.text} className="flex items-center text-freedoc-secondary">
-                    {badge.icon}
-                    <span>{badge.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <Image
-                src="/images/medical-certificate-hero.png"
-                alt="Person resting at home"
-                width={550}
-                height={450}
-                className="rounded-lg shadow-xl object-cover"
-              />
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center">
+            <h1 className="text-4xl sm:text-5xl font-bold text-freedoc-dark mb-4">Online Medical Certificates</h1>
+            <p className="text-lg text-freedoc-secondary mb-6">
+              Get a medical certificate online from an Australian Partner Doctor.
+            </p>
+            <p className="text-2xl font-semibold text-freedoc-blue mb-8">100% Free Certificate</p>
+            <div className="mt-10 space-y-3 flex flex-col items-center">
+              {trustBadges.map((badge) => (
+                <div key={badge.text} className="flex items-center text-freedoc-secondary">
+                  {badge.icon}
+                  <span>{badge.text}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

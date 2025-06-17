@@ -1,5 +1,4 @@
 import { CheckCircle2, FileText, UserCheck, Video, Clock, Tv, Users2 } from "lucide-react"
-import Image from "next/image"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { ComingSoonBanner } from "../components/coming-soon-banner"
 import { FreedocHeader } from "../components/freedoc-header"
@@ -83,15 +82,15 @@ export default function TelehealthPage() {
       </div>
 
       <section className="py-16 lg:py-24 bg-freedoc-blue-light">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
+            <div className="text-center">
               <h1 className="text-4xl sm:text-5xl font-bold text-freedoc-dark mb-4">Online Telehealth Consultations</h1>
               <p className="text-lg text-freedoc-secondary mb-6">
                 Speak with an Australian Partner Doctor via video or phone, from anywhere, for free.
               </p>
               <p className="text-2xl font-semibold text-freedoc-blue mb-8">100% Free Consultation</p>
-              <div className="mt-10 space-y-3">
+              <div className="mt-10 space-y-3 flex flex-col items-center">
                 {trustBadges.map((badge) => (
                   <div key={badge.text} className="flex items-center text-freedoc-secondary">
                     {badge.icon}
@@ -99,15 +98,6 @@ export default function TelehealthPage() {
                   </div>
                 ))}
               </div>
-            </div>
-            <div className="flex justify-center">
-              <Image
-                src="/images/telehealth-hero.png"
-                alt="Doctor on a laptop screen during a video call"
-                width={550}
-                height={450}
-                className="rounded-lg shadow-xl object-cover"
-              />
             </div>
           </div>
         </div>

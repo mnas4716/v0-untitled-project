@@ -1,6 +1,5 @@
 import { ArrowRight, Pill, Stethoscope, Brain, TestTube2, BookOpen, BadgeCheck } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 import { FreedocHeader } from "./components/freedoc-header"
 import { FreedocFooter } from "./components/freedoc-footer"
 import { ComingSoonBanner } from "./components/coming-soon-banner"
@@ -51,15 +50,6 @@ export default function HomePage() {
       <ComingSoonBanner />
 
       <section className="relative py-20 lg:py-28 bg-freedoc-blue-light overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/images/hero-background.png"
-            alt="Abstract medical background"
-            layout="fill"
-            objectFit="cover"
-            className="opacity-20"
-          />
-        </div>
         <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-freedoc-dark mb-6 leading-tight">
             Australia's First Truly <span className="text-freedoc-blue">Free</span> Online Doctor
