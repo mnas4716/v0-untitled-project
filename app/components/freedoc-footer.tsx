@@ -28,6 +28,11 @@ export function FreedocFooter() {
                   Telehealth
                 </Link>
               </li>
+              <li>
+                <Link href="/pathology" className="hover:text-freedoc-blue">
+                  Pathology
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -39,17 +44,17 @@ export function FreedocFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-freedoc-blue">
+                <Link href="/about" className="hover:text-freedoc-blue">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-freedoc-blue">
+                <Link href="/contact" className="hover:text-freedoc-blue">
                   Contact Us
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-freedoc-blue">
+                <Link href="/faq" className="hover:text-freedoc-blue">
                   FAQs
                 </Link>
               </li>
@@ -59,12 +64,12 @@ export function FreedocFooter() {
             <h5 className="font-semibold text-freedoc-dark mb-3">Legal</h5>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="#" className="hover:text-freedoc-blue">
+                <Link href="/privacy-policy" className="hover:text-freedoc-blue">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-freedoc-blue">
+                <Link href="/terms-conditions" className="hover:text-freedoc-blue">
                   Terms & Conditions
                 </Link>
               </li>
@@ -73,6 +78,7 @@ export function FreedocFooter() {
           <div>
             <h5 className="font-semibold text-freedoc-dark mb-3">Connect</h5>
             <p className="text-sm">Follow us for updates!</p>
+            {/* Add social media links here later if needed */}
           </div>
         </div>
         <div className="text-center text-slate-500 text-sm border-t border-slate-200 pt-8">
