@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   title: "Freedoc.",
   description:
     "Australia's first truly free online doctor service. Get prescriptions, medical certificates, mental health support, and telehealth consultations online.",,
+  // Note: Removed previous comment from inside this object to ensure maximum cleanliness for the parser.
   // Next.js will automatically look for icon.png in the app directory.
-  // No explicit icons array needed here if icon.png is present in /app.
     generator: 'v0.dev'
 }
 
