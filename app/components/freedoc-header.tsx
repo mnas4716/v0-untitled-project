@@ -16,12 +16,18 @@ export function FreedocHeader() {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          <Link href="/" className="flex items-center gap-2">
-            <Stethoscope className="h-8 w-8 text-freedoc-blue flex-shrink-0" />
+        <div className="flex items-center justify-between h-24">
+          {" "}
+          {/* Increased height for more space */}
+          <Link href="/" className="flex items-center gap-3">
+            {" "}
+            {/* Increased gap */}
+            <Stethoscope className="h-10 w-10 sm:h-12 sm:w-12 text-freedoc-blue flex-shrink-0" /> {/* Increased size */}
             <div>
-              <span className="text-3xl font-bold text-freedoc-dark leading-none">freedoc.</span>
-              <p className="text-xs text-freedoc-secondary leading-none -mt-1">(formerly freedoctor.)</p>
+              <span className="text-4xl sm:text-5xl font-bold text-freedoc-dark leading-none">freedoc.</span>{" "}
+              {/* Increased size */}
+              <p className="text-sm text-freedoc-secondary leading-none -mt-0.5 sm:-mt-1">(formerly freedoctor.)</p>{" "}
+              {/* Adjusted size and margin */}
             </div>
           </Link>
           <nav className="hidden lg:flex items-center space-x-6">
@@ -45,11 +51,15 @@ export function FreedocHeader() {
               </SheetTrigger>
               <SheetContent side="right" className="w-full sm:w-[300px]">
                 <div className="flex flex-col space-y-4 p-4">
-                  <Link href="/" className="flex items-center gap-2 mb-4">
-                    <Stethoscope className="h-8 w-8 text-freedoc-blue" />
+                  <Link href="/" className="flex items-center gap-3 mb-4">
+                    {" "}
+                    {/* Increased gap */}
+                    <Stethoscope className="h-10 w-10 text-freedoc-blue" /> {/* Increased size */}
                     <div>
-                      <span className="text-3xl font-bold text-freedoc-dark leading-none">freedoc.</span>
-                      <p className="text-xs text-freedoc-secondary leading-none -mt-1">(formerly freedoctor.)</p>
+                      <span className="text-4xl font-bold text-freedoc-dark leading-none">freedoc.</span>{" "}
+                      {/* Increased size */}
+                      <p className="text-sm text-freedoc-secondary leading-none -mt-0.5">(formerly freedoctor.)</p>{" "}
+                      {/* Adjusted size and margin */}
                     </div>
                   </Link>
                   {navLinks.map((link) => (

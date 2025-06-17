@@ -49,17 +49,17 @@ export default function HomePage() {
       <FreedocHeader />
       <ComingSoonBanner />
 
-      <section className="relative py-20 lg:py-28 bg-freedoc-blue-light overflow-hidden">
-        <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-freedoc-dark mb-6 leading-tight">
+      <section className="py-20 lg:py-32 bg-freedoc-blue-light">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-freedoc-dark mb-6 leading-tight max-w-3xl mx-auto">
             Australia's First Truly <span className="text-freedoc-blue">Free</span> Online Doctor
           </h1>
-          <p className="text-lg text-freedoc-secondary mb-8 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-freedoc-secondary mb-10 max-w-2xl mx-auto">
             Freedoc connects you with Australian Partner Doctors for prescriptions, medical certificates, and more — all
             from the comfort of your home, completely free of charge.
           </p>
-          <div className="inline-flex items-center justify-center bg-blue-100 text-freedoc-blue font-bold px-6 py-3 rounded-full">
-            <BadgeCheck className="w-6 h-6 mr-2" />
+          <div className="inline-flex items-center justify-center bg-blue-100 text-freedoc-blue font-semibold px-6 py-3 rounded-full text-base sm:text-lg">
+            <BadgeCheck className="w-6 h-6 mr-2 flex-shrink-0" />
             <span>100% Free Consultations & Services</span>
           </div>
         </div>
@@ -73,15 +73,15 @@ export default function HomePage() {
               <Link
                 href={service.href}
                 key={service.name}
-                className="group block p-8 bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-slate-200"
+                className="group block p-6 sm:p-8 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-slate-200 flex flex-col"
               >
                 <div className="flex items-center mb-4">
-                  {service.icon}
-                  <h3 className="text-xl font-semibold text-freedoc-dark ml-4">{service.name}</h3>
+                  <div className="flex-shrink-0">{service.icon}</div>
+                  <h3 className="text-xl sm:text-2xl font-semibold text-freedoc-dark ml-4">{service.name}</h3>
                 </div>
-                <p className="text-freedoc-secondary mb-4">{service.description}</p>
-                <div className="text-freedoc-blue font-semibold flex items-center text-sm">
-                  Learn More <ArrowRight className="ml-2 h-4 w-4" />
+                <p className="text-freedoc-secondary mb-4 text-sm sm:text-base flex-grow">{service.description}</p>
+                <div className="mt-auto text-freedoc-blue font-semibold flex items-center text-sm sm:text-base">
+                  Learn More <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
               </Link>
             ))}

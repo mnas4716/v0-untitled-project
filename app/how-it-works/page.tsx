@@ -7,28 +7,28 @@ import { FreedocFooter } from "../components/freedoc-footer"
 const generalSteps = [
   {
     number: 1,
-    icon: <FileText className="h-12 w-12 text-freedoc-blue mb-4" />,
+    icon: <FileText className="h-12 w-12 lg:h-16 lg:w-16 text-freedoc-blue mb-4" />,
     title: "Select Your Service",
     description:
       "Choose the service you need from our website – whether it's an online prescription, medical certificate, mental health support, telehealth consultation, or pathology referral.",
   },
   {
     number: 2,
-    icon: <UserCheck className="h-12 w-12 text-freedoc-blue mb-4" />,
+    icon: <UserCheck className="h-12 w-12 lg:h-16 lg:w-16 text-freedoc-blue mb-4" />,
     title: "Complete Online Form/Assessment",
     description:
       "Fill out a secure online form relevant to your chosen service. Provide accurate information about your health, symptoms, and needs. This helps our Partner Doctors assess your request.",
   },
   {
     number: 3,
-    icon: <MessageSquare className="h-12 w-12 text-freedoc-blue mb-4" />,
+    icon: <MessageSquare className="h-12 w-12 lg:h-16 lg:w-16 text-freedoc-blue mb-4" />,
     title: "Doctor Review & Consultation",
     description:
       "An AHPRA registered Australian Partner Doctor will review your submission. For some services like telehealth, this may involve a direct video or phone consultation. For others, the review is based on your form.",
   },
   {
     number: 4,
-    icon: <CheckCircle2 className="h-12 w-12 text-freedoc-blue mb-4" />,
+    icon: <CheckCircle2 className="h-12 w-12 lg:h-16 lg:w-16 text-freedoc-blue mb-4" />,
     title: "Receive Outcome/Service",
     description:
       "If your request is approved and deemed appropriate by the doctor, you'll receive your prescription, medical certificate, referral, or advice directly through our secure platform or to your email/phone. All services are free.",
@@ -37,17 +37,17 @@ const generalSteps = [
 
 const whatToExpect = [
   {
-    icon: <ShieldCheck className="h-8 w-8 text-freedoc-blue mr-3" />,
+    icon: <ShieldCheck className="h-8 w-8 lg:h-10 lg:w-10 text-freedoc-blue mr-3 flex-shrink-0" />,
     title: "Privacy and Security",
     description: "Your personal and health information is protected with industry-standard security measures.",
   },
   {
-    icon: <Clock className="h-8 w-8 text-freedoc-blue mr-3" />,
+    icon: <Clock className="h-8 w-8 lg:h-10 lg:w-10 text-freedoc-blue mr-3 flex-shrink-0" />,
     title: "Timely Responses",
     description: "Our Partner Doctors aim to review requests promptly, typically within a few hours.",
   },
   {
-    icon: <Users className="h-8 w-8 text-freedoc-blue mr-3" />,
+    icon: <Users className="h-8 w-8 lg:h-10 lg:w-10 text-freedoc-blue mr-3 flex-shrink-0" />,
     title: "Professional Care",
     description: "All consultations and reviews are conducted by AHPRA registered Australian doctors.",
   },
@@ -86,8 +86,8 @@ export default function HowItWorksPage() {
 
       <section className="py-16 lg:py-24 bg-freedoc-blue-light">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold text-freedoc-dark mb-4">How Freedoc Works</h1>
-          <p className="text-lg text-freedoc-secondary max-w-2xl mx-auto">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-freedoc-dark mb-4">How Freedoc Works</h1>
+          <p className="text-lg sm:text-xl text-freedoc-secondary max-w-3xl mx-auto">
             Accessing free online healthcare services with Freedoc is simple and convenient. Here’s a general overview
             of our process.
           </p>
@@ -98,12 +98,15 @@ export default function HowItWorksPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {generalSteps.map((step) => (
-              <div key={step.number} className="p-6 bg-white rounded-lg shadow-md border border-slate-200 text-center">
+              <div
+                key={step.number}
+                className="p-6 sm:p-8 bg-white rounded-lg shadow-lg border border-slate-200 text-center"
+              >
                 <div className="flex justify-center items-center mb-4">{step.icon}</div>
-                <h3 className="text-xl font-semibold text-freedoc-dark mb-2">
+                <h3 className="text-lg sm:text-xl font-semibold text-freedoc-dark mb-2">
                   Step {step.number}: {step.title}
                 </h3>
-                <p className="text-freedoc-secondary text-sm">{step.description}</p>
+                <p className="text-freedoc-secondary text-sm sm:text-base">{step.description}</p>
               </div>
             ))}
           </div>
@@ -112,15 +115,17 @@ export default function HowItWorksPage() {
 
       <section className="py-16 lg:py-24 bg-freedoc-blue-light">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-12 text-center">What to Expect</h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-12 text-center">
+            What to Expect
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {whatToExpect.map((item) => (
-              <div key={item.title} className="p-6 bg-white rounded-lg shadow-md">
-                <div className="flex items-center mb-3">
+              <div key={item.title} className="p-6 sm:p-8 bg-white rounded-lg shadow-lg">
+                <div className="flex items-start mb-3">
                   {item.icon}
-                  <h3 className="text-xl font-semibold text-freedoc-dark">{item.title}</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold text-freedoc-dark">{item.title}</h3>
                 </div>
-                <p className="text-freedoc-secondary text-sm">{item.description}</p>
+                <p className="text-freedoc-secondary text-sm sm:text-base">{item.description}</p>
               </div>
             ))}
           </div>
@@ -129,16 +134,18 @@ export default function HowItWorksPage() {
 
       <section className="py-16 lg:py-24">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl font-bold text-freedoc-dark mb-12 text-center">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-12 text-center">
             General FAQs about Freedoc
           </h2>
-          <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
+          <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
             {faqsHIW.map((faq, index) => (
               <AccordionItem key={index} value={`item-${index}`} className="border-b last:border-b-0">
-                <AccordionTrigger className="text-lg hover:no-underline text-left py-4">
+                <AccordionTrigger className="text-lg sm:text-xl hover:no-underline text-left py-4 font-medium">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-freedoc-secondary text-base pb-4">{faq.answer}</AccordionContent>
+                <AccordionContent className="text-freedoc-secondary text-base sm:text-lg pb-4 pt-2">
+                  {faq.answer}
+                </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
