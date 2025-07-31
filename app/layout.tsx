@@ -10,9 +10,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 export const metadata: Metadata = {
   title: "Freedoc.",
   description:
-    "Australia's first truly free online doctor service. Get prescriptions, medical certificates, mental health support, and telehealth consultations online.",,
-  // Note: Removed previous comment from inside this object to ensure maximum cleanliness for the parser.
-  // Next.js will automatically look for icon.png in the app directory.
+    "Australia's first truly free online doctor service. Get prescriptions, medical certificates, mental health support, and telehealth consultations online.",
     generator: 'v0.dev'
 }
 
