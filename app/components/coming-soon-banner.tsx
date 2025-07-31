@@ -1,13 +1,15 @@
-import { AlertTriangle } from "lucide-react"
+import { Wrench } from "lucide-react"
 
 export function ComingSoonBanner() {
   return (
-    <div className="bg-yellow-400 text-black p-3 w-full text-center shadow-md">
+    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 w-full text-center shadow-lg">
       <div className="container mx-auto flex items-center justify-center gap-3">
-        <AlertTriangle className="h-6 w-6 text-yellow-800" />
+        <Wrench className="h-5 w-5 text-blue-100 animate-pulse" />
         <div>
-          <p className="font-bold text-yellow-900">COMING SOON!</p>
-          <p className="text-sm text-yellow-800">Our new website and services will be launching soon.</p>
+          <p className="font-semibold text-white">Currently under re-development</p>
+          <p className="text-sm text-blue-100">
+            Our new and improved website, app and services will be re-launching again soon
+          </p>
         </div>
       </div>
     </div>
