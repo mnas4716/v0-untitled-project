@@ -22,6 +22,7 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<"email" | "otp">("email")
   const [error, setError] = useState<string | null>(null)
+  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null)
 
   const handleRequestOTP = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,6 +42,10 @@ export default function SignInPage() {
 
       if (data.success) {
         setStep("otp")
+        // For development, show the OTP
+        if (data.otp) {
+          setGeneratedOtp(data.otp)
+        }
       } else {
         if (data.notRegistered) {
           setError("This email is not registered. Please submit a consultation request first.")
@@ -62,6 +67,22 @@ export default function SignInPage() {
     setIsLoading(true)
 
     try {
+      // For development, accept any 6-digit OTP
+      if (process.env.NODE_ENV !== "production" && /^\d{6}$/.test(otp)) {
+        // Use the shared authentication function
+        const result = await authenticateUser(email)
+
+        if (!result.success) {
+          setError(result.message || "Authentication failed. Please try again.")
+          setIsLoading(false)
+          return
+        }
+
+        // Redirect to dashboard
+        router.push("/dashboard")
+        return
+      }
+
       const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: {
@@ -92,6 +113,13 @@ export default function SignInPage() {
       console.error(err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // For development, auto-fill OTP if available
+  const handleAutoFillOtp = () => {
+    if (generatedOtp) {
+      setOtp(generatedOtp)
     }
   }
 
@@ -139,7 +167,18 @@ export default function SignInPage() {
             ) : (
               <form onSubmit={handleVerifyOTP} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="otp">One-Time Password</Label>
+                  <div className="flex justify-between">
+                    <Label htmlFor="otp">One-Time Password</Label>
+                    {generatedOtp && (
+                      <button
+                        type="button"
+                        onClick={handleAutoFillOtp}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Auto-fill (Dev Only)
+                      </button>
+                    )}
+                  </div>
                   <Input
                     id="otp"
                     type="text"
@@ -150,7 +189,6 @@ export default function SignInPage() {
                     required
                     className="border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                   />
-                  <p className="text-sm text-gray-500">Check your email for the 6-digit verification code</p>
                 </div>
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                   {isLoading ? "Verifying..." : "Sign In"}

@@ -9,9 +9,9 @@ import {
   updateUser,
   updateUserLoginTime,
   createConsultRequest,
-  cancelConsultRequest,
   getAllDoctors,
   addFileAttachmentToConsult,
+  cancelConsultRequest,
 } from "@/lib/database-service"
 import { sendOtpEmail } from "@/lib/email"
 
@@ -95,141 +95,155 @@ function getRandomActiveDoctor() {
   return doctors[randomIndex]
 }
 
-// Optimize the OTP functions for better performance and reliability
-
 // Function to request OTP
 export async function requestOTP(email: string) {
-  console.log("requestOTP called for:", email)
-
-  // Validate email
   if (!email || !email.includes("@")) {
-    return {
-      success: false,
-      message: "Invalid email address",
-    }
+    return { success: false, message: "Invalid email address" }
   }
 
   try {
-    // Generate a random 6-digit OTP
     const otp = generateOTP()
-    console.log(`Generated OTP for ${email}: ${otp}`)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000) // Expires in 15 minutes
+    otpStore[email.toLowerCase()] = { otp, expires: expiresAt }
 
-    // Store OTP with expiration (15 minutes)
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
-    otpStore[email] = { otp, expires: expiresAt }
-    console.log(`OTP stored for ${email}, expires at ${expiresAt.toISOString()}`)
+    await sendOtpEmail(email, otp)
 
-    // Send OTP via email
-    const emailResult = await sendOtpEmail(email, otp)
-
-    if (!emailResult.success) {
-      console.error("Failed to send OTP email:", emailResult.error)
-      return {
-        success: false,
-        message: "Failed to send OTP email. Please try again.",
-      }
-    }
-
-    // Store the email in a cookie for the OTP verification step
     cookies().set("userEmail", email, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 15 * 60, // 15 minutes
+      maxAge: 15 * 60,
       path: "/",
     })
 
     return {
       success: true,
-      message: "OTP sent to your email address",
+      message: "OTP sent successfully",
+      otp: process.env.NODE_ENV !== "production" ? otp : undefined,
     }
   } catch (error) {
     console.error("Error in requestOTP:", error)
-    return {
-      success: false,
-      message: "Failed to send OTP. Please try again.",
-      error: error instanceof Error ? error.message : String(error),
-    }
+    return { success: false, message: "Failed to send OTP. Please try again." }
   }
 }
 
-// Function to verify OTP and sign in
+// Function to verify OTP
 export async function verifyOTP(email: string, otp: string) {
-  console.log("verifyOTP called for:", email, "with OTP:", otp)
-
-  // Validate inputs
-  if (!email || !email.includes("@")) {
-    return {
-      success: false,
-      message: "Invalid email address",
-    }
+  if (!email || !otp) {
+    return { success: false, message: "Email and OTP are required." }
   }
 
-  if (!otp || otp.length !== 6 || !/^\d+$/.test(otp)) {
-    return {
-      success: false,
-      message: "Invalid OTP format",
-    }
-  }
+  const storedOTPData = otpStore[email.toLowerCase()]
 
-  try {
-    // Get stored OTP
-    const storedOTPData = otpStore[email]
-    console.log("Retrieved OTP data:", storedOTPData)
+  if (storedOTPData && storedOTPData.otp === otp && new Date() <= storedOTPData.expires) {
+    delete otpStore[email.toLowerCase()]
+    cookies().delete("userEmail")
 
-    // Verify OTP against stored value and check expiration
-    const isValidOTP = storedOTPData && storedOTPData.otp === otp && new Date() <= storedOTPData.expires
-
-    if (isValidOTP) {
-      // OTP is valid, clean up
-      delete otpStore[email]
-      cookies().delete("userEmail")
-
-      // Check if user exists, if not create a new user
-      let user = getUserByEmail(email)
-
-      if (!user) {
-        // Create new user with basic info
-        user = createUser({
-          email,
-          firstName: email.split("@")[0], // Simple name extraction from email
-          lastName: "",
-        })
-
-        if (!user) {
-          return {
-            success: false,
-            message: "Failed to create user account.",
-          }
-        }
-      } else {
-        // Update last login time
-        updateUserLoginTime(user.id)
-      }
-
-      console.log("User authenticated successfully:", user)
-      return {
-        success: true,
-        user: user,
-      }
+    let user = getUserByEmail(email)
+    if (user) {
+      updateUserLoginTime(user.id)
     } else {
-      // Invalid OTP
-      return {
-        success: false,
-        message: storedOTPData
-          ? new Date() > storedOTPData.expires
-            ? "OTP has expired. Please request a new one."
-            : "Invalid OTP. Please try again."
-          : "OTP not found. Please request a new one.",
-      }
+      // This case should ideally not happen if sign-in is only for existing users
+      // but as a fallback, we can create a user.
+      user = createUser({ email, firstName: email.split("@")[0], lastName: "" })
     }
-  } catch (error) {
-    console.error("Error in verifyOTP:", error)
-    return {
-      success: false,
-      message: "Failed to verify OTP. Please try again.",
-      error: error instanceof Error ? error.message : String(error),
-    }
+
+    return { success: true, user }
+  } else {
+    return { success: false, message: "Invalid or expired OTP." }
   }
+}
+
+// Generic function to handle form submissions
+async function handleFormSubmission(formData: FormData, type: "consultation" | "medical-certificate" | "prescription") {
+  try {
+    const data = Object.fromEntries(formData.entries())
+    const fileCount = Number(data.fileCount) || 0
+
+    // Basic validation
+    if (!data.firstName || !data.lastName || !data.email || !data.phone || !data.dob || !data.reason) {
+      return { success: false, message: "Missing required fields" }
+    }
+
+    const email = data.email as string
+    let user = getUserByEmail(email)
+
+    const userDetails = {
+      email,
+      firstName: data.firstName as string,
+      lastName: data.lastName as string,
+      phone: data.phone as string,
+      dob: data.dob as string,
+      medicareNumber: data.medicareNumber as string,
+      address: data.address as string,
+      suburb: data.suburb as string,
+      state: data.state as string,
+      postcode: data.postcode as string,
+    }
+
+    if (!user) {
+      user = createUser(userDetails)
+    } else {
+      updateUser(user.id, userDetails)
+    }
+
+    if (!user) {
+      return { success: false, message: "Failed to create or update user account." }
+    }
+
+    const randomDoctor = getRandomActiveDoctor()
+    const assignedDoctorId = randomDoctor ? randomDoctor.id : undefined
+
+    const today = new Date()
+    const consultRequestData = {
+      userId: user.id,
+      type,
+      status: "pending" as const,
+      reason: (data.reason || data.medication) as string,
+      date: today.toISOString().split("T")[0],
+      time: `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`,
+      patientName: `${data.firstName} ${data.lastName}`,
+      email,
+      phone: data.phone as string,
+      assignedDoctorId,
+      details: { ...data, files: fileCount > 0 },
+      attachments: [],
+    }
+
+    const consultRequest = createConsultRequest(consultRequestData)
+
+    if (fileCount > 0) {
+      const filePromises = []
+      for (let i = 0; i < fileCount; i++) {
+        const file = formData.get(`file-${i}`) as File
+        if (file) {
+          filePromises.push(addFileAttachmentToConsult(consultRequest.id, file))
+        }
+      }
+      await Promise.all(filePromises)
+    }
+
+    let redirectUrl = ""
+    if (type === "consultation") redirectUrl = "/consult/confirmation"
+    if (type === "medical-certificate") redirectUrl = "/medical-certificate/confirmation"
+    if (type === "prescription") redirectUrl = "/prescription/confirmation"
+
+    return { success: true, redirectUrl }
+  } catch (error) {
+    console.error(`Error submitting ${type} request:`, error)
+    return { success: false, message: `Failed to submit ${type} request. Please try again.` }
+  }
+}
+
+export async function submitConsultation(formData: FormData) {
+  return handleFormSubmission(formData, "consultation")
+}
+
+export async function requestMedicalCertificate(formData: FormData) {
+  return handleFormSubmission(formData, "medical-certificate")
+}
+
+export async function requestPrescription(formData: FormData) {
+  return handleFormSubmission(formData, "prescription")
 }
 
 // Function to handle admin sign-in
@@ -262,403 +276,6 @@ export async function adminSignIn(formData: FormData) {
   } catch (error) {
     return {
       error: "Failed to sign in. Please try again.",
-    }
-  }
-}
-
-// Function to handle consultation form submission
-export async function submitConsultation(formData: FormData) {
-  try {
-    // Extract data from FormData
-    const firstName = formData.get("firstName") as string
-    const lastName = formData.get("lastName") as string
-    const email = formData.get("email") as string
-    const phone = formData.get("phone") as string
-    const dob = formData.get("dob") as string
-    const medicareNumber = formData.get("medicareNumber") as string
-    const address = formData.get("address") as string
-    const suburb = formData.get("suburb") as string
-    const state = formData.get("state") as string
-    const postcode = formData.get("postcode") as string
-    const reason = formData.get("reason") as string
-    const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
-
-    // Basic validation
-    if (!firstName || !lastName || !email || !phone || !dob || !reason || !address) {
-      return { success: false, message: "Missing required fields" }
-    }
-
-    // Check if user exists, if not create a new user
-    let user = getUserByEmail(email)
-
-    if (!user) {
-      // Create new user with provided info
-      user = createUser({
-        email,
-        firstName,
-        lastName,
-        phone,
-        dob,
-        medicareNumber,
-        address,
-        suburb,
-        state,
-        postcode,
-      })
-
-      if (!user) {
-        return {
-          success: false,
-          message: "Failed to create user account.",
-        }
-      }
-    } else {
-      // Update user information if it exists
-      updateUser(user.id, {
-        firstName,
-        lastName,
-        phone,
-        dob,
-        medicareNumber,
-        address,
-        suburb,
-        state,
-        postcode,
-      })
-    }
-
-    // Get current date and time for the appointment
-    const today = new Date()
-    const date = today.toISOString().split("T")[0]
-    const time = `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`
-
-    // Get a random active doctor to assign the consultation to
-    const randomDoctor = getRandomActiveDoctor()
-    const assignedDoctorId = randomDoctor ? randomDoctor.id : undefined
-
-    // Create consultation request
-    const consultRequest = createConsultRequest({
-      userId: user.id,
-      type: "consultation",
-      status: "pending",
-      reason,
-      date,
-      time,
-      patientName: `${firstName} ${lastName}`,
-      email,
-      phone,
-      assignedDoctorId,
-      details: {
-        firstName,
-        lastName,
-        email,
-        phone,
-        dob,
-        medicareNumber,
-        address,
-        suburb,
-        state,
-        postcode,
-        files: fileCount > 0 ? true : false,
-      },
-      attachments: [],
-    })
-
-    // Process file uploads if any
-    if (fileCount > 0) {
-      const filePromises = []
-      for (let i = 0; i < fileCount; i++) {
-        const file = formData.get(`file-${i}`) as File
-        if (file) {
-          filePromises.push(addFileAttachmentToConsult(consultRequest.id, file))
-        }
-      }
-
-      // Wait for all file uploads to complete
-      if (filePromises.length > 0) {
-        await Promise.all(filePromises)
-      }
-    }
-
-    // Return success with redirect URL instead of directly redirecting
-    return {
-      success: true,
-      redirectUrl: "/consult/confirmation",
-      message: "Consultation request submitted successfully",
-    }
-  } catch (error) {
-    console.error("Error submitting consultation request:", error)
-    return {
-      success: false,
-      message: "Failed to submit consultation request. Please try again.",
-      error: error instanceof Error ? error.message : String(error),
-    }
-  }
-}
-
-// Function to handle medical certificate form submission
-export async function requestMedicalCertificate(formData: FormData) {
-  try {
-    // Extract data from FormData
-    const firstName = formData.get("firstName") as string
-    const lastName = formData.get("lastName") as string
-    const email = formData.get("email") as string
-    const phone = formData.get("phone") as string
-    const dob = formData.get("dob") as string
-    const medicareNumber = formData.get("medicareNumber") as string
-    const address = formData.get("address") as string
-    const suburb = formData.get("suburb") as string
-    const state = formData.get("state") as string
-    const postcode = formData.get("postcode") as string
-    const reason = formData.get("reason") as string
-    const startDate = formData.get("startDate") as string
-    const endDate = formData.get("endDate") as string
-    const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
-
-    // Basic validation
-    if (!firstName || !lastName || !email || !phone || !dob || !reason || !startDate || !endDate || !address) {
-      return { success: false, message: "Missing required fields" }
-    }
-
-    // Check if user exists, if not create a new user
-    let user = getUserByEmail(email)
-
-    if (!user) {
-      // Create new user with provided info
-      user = createUser({
-        email,
-        firstName,
-        lastName,
-        phone,
-        dob,
-        medicareNumber,
-        address,
-        suburb,
-        state,
-        postcode,
-      })
-
-      if (!user) {
-        return {
-          success: false,
-          message: "Failed to create user account.",
-        }
-      }
-    } else {
-      // Update user information if it exists
-      updateUser(user.id, {
-        firstName,
-        lastName,
-        phone,
-        dob,
-        medicareNumber,
-        address,
-        suburb,
-        state,
-        postcode,
-      })
-    }
-
-    // Get current date and time for the appointment
-    const today = new Date()
-    const date = today.toISOString().split("T")[0]
-    const time = `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`
-
-    // Get a random active doctor to assign the consultation to
-    const randomDoctor = getRandomActiveDoctor()
-    const assignedDoctorId = randomDoctor ? randomDoctor.id : undefined
-
-    // Create medical certificate request
-    const consultRequest = createConsultRequest({
-      userId: user.id,
-      type: "medical-certificate",
-      status: "pending",
-      reason,
-      date,
-      time,
-      patientName: `${firstName} ${lastName}`,
-      email,
-      phone,
-      assignedDoctorId,
-      details: {
-        firstName,
-        lastName,
-        email,
-        phone,
-        dob,
-        medicareNumber,
-        address,
-        suburb,
-        state,
-        postcode,
-        startDate,
-        endDate,
-        files: fileCount > 0 ? true : false,
-      },
-      attachments: [],
-    })
-
-    // Process file uploads if any
-    if (fileCount > 0) {
-      const filePromises = []
-      for (let i = 0; i < fileCount; i++) {
-        const file = formData.get(`file-${i}`) as File
-        if (file) {
-          filePromises.push(addFileAttachmentToConsult(consultRequest.id, file))
-        }
-      }
-
-      // Wait for all file uploads to complete
-      if (filePromises.length > 0) {
-        await Promise.all(filePromises)
-      }
-    }
-
-    // Return success with redirect URL instead of directly redirecting
-    return {
-      success: true,
-      redirectUrl: "/medical-certificate/confirmation",
-      message: "Medical certificate request submitted successfully",
-    }
-  } catch (error) {
-    console.error("Error submitting medical certificate request:", error)
-    return {
-      success: false,
-      message: "Failed to submit medical certificate request",
-      error: error instanceof Error ? error.message : String(error),
-    }
-  }
-}
-
-// Function to handle prescription form submission
-export async function requestPrescription(formData: FormData) {
-  try {
-    // Extract data from FormData
-    const firstName = formData.get("firstName") as string
-    const lastName = formData.get("lastName") as string
-    const email = formData.get("email") as string
-    const phone = formData.get("phone") as string
-    const dob = formData.get("dob") as string
-    const medicareNumber = formData.get("medicareNumber") as string
-    const address = formData.get("address") as string
-    const suburb = formData.get("suburb") as string
-    const state = formData.get("state") as string
-    const postcode = formData.get("postcode") as string
-    const medication = formData.get("medication") as string
-    const deliveryOption = formData.get("deliveryOption") as string
-    const fileCount = Number.parseInt(formData.get("fileCount") as string) || 0
-
-    // Basic validation
-    if (!firstName || !lastName || !email || !phone || !dob || !medication || !address) {
-      return { success: false, message: "Missing required fields" }
-    }
-
-    // Check if user exists, if not create a new user
-    let user = getUserByEmail(email)
-
-    if (!user) {
-      // Create new user with provided info
-      user = createUser({
-        email,
-        firstName,
-        lastName,
-        phone,
-        dob,
-        medicareNumber,
-        address,
-        suburb,
-        state,
-        postcode,
-      })
-
-      if (!user) {
-        return {
-          success: false,
-          message: "Failed to create user account.",
-        }
-      }
-    } else {
-      // Update user information if it exists
-      updateUser(user.id, {
-        firstName,
-        lastName,
-        phone,
-        dob,
-        medicareNumber,
-        address,
-        suburb,
-        state,
-        postcode,
-      })
-    }
-
-    // Get current date and time for the appointment
-    const today = new Date()
-    const date = today.toISOString().split("T")[0]
-    const time = `${today.getHours()}:${today.getMinutes().toString().padStart(2, "0")}`
-
-    // Get a random active doctor to assign the consultation to
-    const randomDoctor = getRandomActiveDoctor()
-    const assignedDoctorId = randomDoctor ? randomDoctor.id : undefined
-
-    // Create prescription request
-    const consultRequest = createConsultRequest({
-      userId: user.id,
-      type: "prescription",
-      status: "pending",
-      reason: `Prescription request: ${medication}`,
-      date,
-      time,
-      patientName: `${firstName} ${lastName}`,
-      email,
-      phone,
-      assignedDoctorId,
-      details: {
-        firstName,
-        lastName,
-        email,
-        phone,
-        dob,
-        medicareNumber,
-        address,
-        suburb,
-        state,
-        postcode,
-        medication,
-        deliveryOption,
-        files: fileCount > 0 ? true : false,
-      },
-      attachments: [],
-    })
-
-    // Process file uploads if any
-    if (fileCount > 0) {
-      const filePromises = []
-      for (let i = 0; i < fileCount; i++) {
-        const file = formData.get(`file-${i}`) as File
-        if (file) {
-          filePromises.push(addFileAttachmentToConsult(consultRequest.id, file))
-        }
-      }
-
-      // Wait for all file uploads to complete
-      if (filePromises.length > 0) {
-        await Promise.all(filePromises)
-      }
-    }
-
-    // Return success with redirect URL instead of directly redirecting
-    return {
-      success: true,
-      redirectUrl: "/prescription/confirmation",
-      message: "Prescription request submitted successfully",
-    }
-  } catch (error) {
-    console.error("Error submitting prescription request:", error)
-    return {
-      success: false,
-      message: "Failed to submit prescription request",
-      error: error instanceof Error ? error.message : String(error),
     }
   }
 }
