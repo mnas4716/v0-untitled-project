@@ -1,126 +1,244 @@
-import { ArrowRight, Pill, Stethoscope, Brain, TestTube2, BookOpen, BadgeCheck, Sparkles } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
-import { FreedocHeader } from "./components/freedoc-header"
-import { FreedocFooter } from "./components/freedoc-footer"
-import { ComingSoonBanner } from "./components/coming-soon-banner"
+import { ArrowRight, Calendar, FileText, Pill, ShieldCheck, Clock } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
 
-const services = [
-  {
-    name: "Online Prescriptions",
-    href: "/prescription",
-    icon: <Pill className="h-8 w-8 text-freedoc-blue" />,
-    description: "Renew your scripts online quickly and easily.",
-    gradient: "from-blue-50 to-indigo-50",
-  },
-  {
-    name: "Medical Certificates",
-    href: "/medical-certificate",
-    icon: <Stethoscope className="h-8 w-8 text-freedoc-blue" />,
-    description: "Get medical certificates for work or study.",
-    gradient: "from-emerald-50 to-teal-50",
-  },
-  {
-    name: "Mental Health Support",
-    href: "/mental-health",
-    icon: <Brain className="h-8 w-8 text-freedoc-blue" />,
-    description: "Access mental health care plans and support.",
-    gradient: "from-purple-50 to-violet-50",
-  },
-  {
-    name: "Telehealth Consults",
-    href: "/telehealth",
-    icon: <Stethoscope className="h-8 w-8 text-freedoc-blue" />,
-    description: "Speak to an Australian Partner Doctor online.",
-    gradient: "from-orange-50 to-amber-50",
-  },
-  {
-    name: "Pathology Referrals",
-    href: "/pathology",
-    icon: <TestTube2 className="h-8 w-8 text-freedoc-blue" />,
-    description: "Online referrals for a range of pathology tests.",
-    gradient: "from-rose-50 to-pink-50",
-  },
-  {
-    name: "How It Works",
-    href: "/how-it-works",
-    icon: <BookOpen className="h-8 w-8 text-freedoc-blue" />,
-    description: "Learn how our online services operate.",
-    gradient: "from-cyan-50 to-sky-50",
-  },
-]
-
-export default function HomePage() {
+export default function Home() {
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-white to-blue-50 text-freedoc-dark min-h-screen">
-      <FreedocHeader />
-      <ComingSoonBanner />
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <SiteHeader activePage="home" />
 
-      <section className="py-20 lg:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-indigo-600/5"></div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
-          <div className="inline-flex items-center gap-2 bg-blue-100/80 backdrop-blur-sm text-freedoc-blue font-medium px-4 py-2 rounded-full text-sm mb-8 border border-blue-200/50">
-            <Sparkles className="w-4 h-4" />
-            <span>Australia's First Truly Free Online Doctor</span>
-          </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-freedoc-dark mb-6 leading-tight max-w-4xl mx-auto">
-            Healthcare Made{" "}
-            <span className="bg-gradient-to-r from-freedoc-blue via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Simple
-            </span>{" "}
-            & Free
-          </h1>
-          <p className="text-lg sm:text-xl text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Connect with Australian Partner Doctors for prescriptions, medical certificates, and more — all from the
-            comfort of your home, completely free of charge.
-          </p>
-          <div className="inline-flex items-center justify-center bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 font-semibold px-8 py-4 rounded-2xl text-base sm:text-lg shadow-lg border border-green-200/50">
-            <BadgeCheck className="w-6 h-6 mr-3 flex-shrink-0" />
-            <span>100% Free Consultations & Services</span>
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-blue-600 to-blue-700 py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center gap-12">
+            <div className="md:w-1/2">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                Healthcare at your fingertips, completely free
+              </h1>
+              <p className="text-blue-100 text-lg mb-8 max-w-lg">
+                Connect with Australian doctors online 24/7. Get prescriptions, medical certificates, and health advice
+                without any cost.
+              </p>
+              <div>
+                <Link href="/consult">
+                  <Button
+                    size="lg"
+                    className="bg-white text-blue-600 hover:bg-blue-50 transition-all transform hover:-translate-y-1 w-full sm:w-auto"
+                  >
+                    Start Free Consultation
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="md:w-1/2 mt-8 md:mt-0">
+              <div className="relative bg-white p-2 rounded-2xl shadow-xl transform transition-all hover:-translate-y-1 hover:shadow-2xl">
+                <Image
+                  src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                  alt="Doctor consultation"
+                  width={600}
+                  height={400}
+                  className="rounded-xl w-full"
+                />
+                <div className="absolute -bottom-4 -right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium">
+                  100% Free
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="services" className="py-16 lg:py-24 relative">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Services Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-freedoc-dark mb-4">
-              How We Can{" "}
-              <span className="bg-gradient-to-r from-freedoc-blue to-indigo-600 bg-clip-text text-transparent">
-                Help You
-              </span>
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Choose from our comprehensive range of free online healthcare services
+            <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">Our Services</span>
+            <h2 className="text-3xl font-bold mt-4 mb-4 text-slate-800">Free Healthcare Services</h2>
+            <p className="text-slate-600 max-w-2xl mx-auto">
+              Get the healthcare you need, when you need it, completely free. Our doctors can help with a range of
+              health concerns.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service) => (
-              <Link
-                href={service.href}
-                key={service.name}
-                className={`group block p-8 bg-gradient-to-br ${service.gradient} rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-white/50 backdrop-blur-sm relative overflow-hidden`}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative z-10">
-                  <div className="flex items-center mb-6">
-                    <div className="p-3 rounded-xl bg-white/80 backdrop-blur-sm shadow-lg group-hover:shadow-xl transition-all duration-300">
-                      {service.icon}
-                    </div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-freedoc-dark ml-4">{service.name}</h3>
-                  </div>
-                  <p className="text-slate-600 mb-6 text-sm sm:text-base leading-relaxed">{service.description}</p>
-                  <div className="text-freedoc-blue font-semibold flex items-center text-sm sm:text-base group-hover:gap-3 transition-all duration-300">
-                    Learn More{" "}
-                    <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-300" />
-                  </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white rounded-2xl shadow-md overflow-hidden transform transition-all hover:-translate-y-2 hover:shadow-lg">
+              <div className="p-6">
+                <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mb-6">
+                  <FileText className="h-7 w-7 text-blue-600" />
                 </div>
-              </Link>
-            ))}
+                <h3 className="text-xl font-semibold mb-3 text-slate-800">Medical Certificate</h3>
+                <p className="text-slate-600 mb-6">
+                  Get a medical certificate for work, school or university without leaving home.
+                </p>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-start text-sm">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-slate-700">Valid for work or education</span>
+                  </li>
+                  <li className="flex items-start text-sm">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-slate-700">Issued within 60 minutes</span>
+                  </li>
+                  <li className="flex items-start text-sm">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-slate-700">Delivered to your email</span>
+                  </li>
+                </ul>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-semibold text-blue-600">Free</span>
+                  <Link href="/medical-certificate">
+                    <Button variant="ghost" className="hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                      Learn more <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-md overflow-hidden transform transition-all hover:-translate-y-2 hover:shadow-lg">
+              <div className="p-6">
+                <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mb-6">
+                  <Pill className="h-7 w-7 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-slate-800">Online Prescription</h3>
+                <p className="text-slate-600 mb-6">
+                  Get prescriptions for new medications or repeats for existing ones.
+                </p>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-start text-sm">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-slate-700">New and repeat prescriptions</span>
+                  </li>
+                  <li className="flex items-start text-sm">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-slate-700">Delivery or pharmacy pickup</span>
+                  </li>
+                  <li className="flex items-start text-sm">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-slate-700">E-prescription to your phone</span>
+                  </li>
+                </ul>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-semibold text-blue-600">Free</span>
+                  <Link href="/prescription">
+                    <Button variant="ghost" className="hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                      Learn more <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-md overflow-hidden transform transition-all hover:-translate-y-2 hover:shadow-lg">
+              <div className="p-6">
+                <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mb-6">
+                  <Calendar className="h-7 w-7 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-slate-800">Telehealth Consultation</h3>
+                <p className="text-slate-600 mb-6">Speak with a doctor about any health concern via video or phone.</p>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-start text-sm">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-slate-700">Consult about any health issue</span>
+                  </li>
+                  <li className="flex items-start text-sm">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-slate-700">Available 6am to midnight</span>
+                  </li>
+                  <li className="flex items-start text-sm">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-slate-700">No extra cost for weekends</span>
+                  </li>
+                </ul>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-semibold text-blue-600">Free</span>
+                  <Link href="/telehealth">
+                    <Button variant="ghost" className="hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                      Learn more <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <FreedocFooter />
+      {/* Features */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="flex flex-col items-center text-center p-6 hover:bg-blue-50 rounded-lg transition-colors">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                <Clock className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-medium mb-2 text-slate-800">24/7 Availability</h3>
+              <p className="text-sm text-slate-600">Doctors available when you need them</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-6 hover:bg-blue-50 rounded-lg transition-colors">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                <ShieldCheck className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-medium mb-2 text-slate-800">Registered Doctors</h3>
+              <p className="text-sm text-slate-600">All doctors are fully qualified</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-6 hover:bg-blue-50 rounded-lg transition-colors">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                <FileText className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-medium mb-2 text-slate-800">Digital Documents</h3>
+              <p className="text-sm text-slate-600">Prescriptions and certificates delivered digitally</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-6 hover:bg-blue-50 rounded-lg transition-colors">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                <Calendar className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-medium mb-2 text-slate-800">Instant Booking</h3>
+              <p className="text-sm text-slate-600">Book and connect with doctors instantly</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-slate-100">
+        <div className="container mx-auto px-4">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 md:p-12 shadow-lg transform transition-all hover:shadow-xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div>
+                <h2 className="text-3xl font-bold text-white mb-4">Ready to see a doctor?</h2>
+                <p className="text-blue-100 mb-6">
+                  Skip the waiting room and connect with a doctor online today. Get the care you need, completely free.
+                </p>
+                <Link href="/consult">
+                  <Button
+                    size="lg"
+                    className="bg-white text-blue-600 hover:bg-blue-50 transition-all transform hover:-translate-y-1"
+                  >
+                    Start Free Consultation
+                  </Button>
+                </Link>
+              </div>
+              <div className="hidden md:block">
+                <div className="bg-white p-2 rounded-xl shadow-md">
+                  <Image
+                    src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                    alt="Doctor consultation"
+                    width={400}
+                    height={300}
+                    className="rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <SiteFooter />
     </div>
   )
 }

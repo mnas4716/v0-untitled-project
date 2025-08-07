@@ -1,193 +1,171 @@
-import { CheckCircle2, FileText, UserCheck, Video, Clock, Tv, Users2 } from "lucide-react"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { ComingSoonBanner } from "../components/coming-soon-banner"
-import { FreedocHeader } from "../components/freedoc-header"
-import { FreedocFooter } from "../components/freedoc-footer"
-
-const trustBadges = [
-  {
-    icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2 flex-shrink-0" />,
-    text: "Secure Video/Phone Consultations",
-  },
-  {
-    icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2 flex-shrink-0" />,
-    text: "Experienced AHPRA Registered Doctors",
-  },
-  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2 flex-shrink-0" />, text: "Completely Free Service" },
-]
-
-const howItWorksStepsTelehealth = [
-  {
-    icon: <FileText className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Request a consultation",
-    description: "Briefly describe your health concern and select a preferred time if applicable.",
-  },
-  {
-    icon: <UserCheck className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Doctor connects with you",
-    description: "An Australian Partner Doctor will initiate a secure video or phone call at the scheduled time.",
-  },
-  {
-    icon: <Video className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Discuss your health needs",
-    description: "Have a private consultation with the doctor to discuss your symptoms and receive medical advice.",
-  },
-]
-
-const commonIssues = [
-  "Cold & Flu Symptoms",
-  "Minor Infections (e.g., UTI, skin)",
-  "General Medical Advice",
-  "Medication Queries",
-  "Referral Letters (non-urgent)",
-  "Lifestyle Advice",
-]
-
-const whyChooseFreedocTH = [
-  {
-    icon: <Clock className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Convenient Access",
-    description: "Speak to a doctor from anywhere, saving travel time and fitting into your schedule.",
-  },
-  {
-    icon: <Tv className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Free & Secure",
-    description: "All telehealth consultations are free and conducted over a secure platform.",
-  },
-  {
-    icon: <Users2 className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Quality Care",
-    description: "Receive advice from AHPRA registered Australian doctors for a range of common health issues.",
-  },
-]
-
-const faqsTH = [
-  {
-    question: "What can I use telehealth for?",
-    answer:
-      "Telehealth is suitable for non-emergency medical advice, discussing symptoms, medication queries, obtaining certain referrals, and follow-up consultations. It's ideal for situations where a physical examination isn't essential. This service is free.",
-  },
-  {
-    question: "How do I connect for my telehealth appointment?",
-    answer:
-      "You will receive instructions on how to connect via secure video or phone call once your appointment is confirmed. Ensure you have a stable internet connection and a private space for your consultation.",
-  },
-  {
-    question: "Can I get a prescription or medical certificate via telehealth?",
-    answer:
-      "Yes, if the doctor deems it appropriate during your free telehealth consultation, they can issue prescriptions or medical certificates. Please see our specific pages for those services for more details.",
-  },
-]
+import Image from "next/image"
+import Link from "next/link"
+import { CheckCircle, ArrowRight, Video, MessageSquare, Phone } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
 
 export default function TelehealthPage() {
   return (
-    <div className="bg-white text-freedoc-dark">
-      <FreedocHeader />
-      <div className="sticky top-[80px] z-30">
-        <ComingSoonBanner />
-      </div>
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <SiteHeader activePage="telehealth" />
 
-      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-freedoc-dark mb-4">
-              Online Telehealth Consultations
-            </h1>
-            <p className="text-lg sm:text-xl text-freedoc-secondary mb-6">
-              Speak with an Australian Partner Doctor via video or phone, from anywhere, for free.
+      {/* Hero Section */}
+      <section className="bg-blue-600 text-white">
+        <div className="container mx-auto px-4 py-16 md:py-20 flex flex-col md:flex-row items-center">
+          <div className="md:w-1/2 mb-10 md:mb-0">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Free Telehealth Consultations</h2>
+            <p className="text-lg mb-6">
+              Speak with a doctor online from the comfort of your home. Get medical advice, prescriptions, and
+              referrals.
             </p>
-            <p className="text-xl sm:text-2xl font-semibold text-freedoc-blue mb-8">100% Free Consultation</p>
-            <div className="space-y-3 flex flex-col items-center sm:items-start">
-              {trustBadges.map((badge) => (
-                <div key={badge.text} className="flex items-center text-freedoc-secondary text-sm sm:text-base">
-                  {badge.icon}
-                  <span>{badge.text}</span>
-                </div>
-              ))}
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Consult with registered doctors</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Available 7 days a week</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Video, phone, or chat options</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Completely free of charge</span>
+              </li>
+            </ul>
+            <Link href="/consult">
+              <Button
+                size="lg"
+                className="bg-white hover:bg-blue-50 text-blue-600 transition-all transform hover:-translate-y-1"
+              >
+                Start Free Consultation
+              </Button>
+            </Link>
+          </div>
+
+          <div className="md:w-1/2 flex justify-center">
+            <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
+              <Image
+                src="https://images.unsplash.com/photo-1581056771107-24ca5f033842?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                alt="Telehealth Consultation"
+                width={400}
+                height={400}
+                className="rounded-md w-full h-auto"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-16 lg:py-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-4">How Telehealth Works</h2>
-          <p className="text-base sm:text-lg text-freedoc-secondary mb-12 max-w-2xl mx-auto">
-            Connect with a doctor online in three easy steps.
-          </p>
-          <div className="grid md:grid-cols-3 gap-8">
-            {howItWorksStepsTelehealth.map((step, index) => (
-              <div key={step.title} className="p-6 sm:p-8 bg-white rounded-lg shadow-lg border border-slate-200">
-                <div className="flex justify-center items-center mb-4">{step.icon}</div>
-                <h3 className="text-lg sm:text-xl font-semibold text-freedoc-dark mb-2">
-                  {index + 1}. {step.title}
-                </h3>
-                <p className="text-freedoc-secondary text-sm sm:text-base">{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Consultation Types */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-slate-800 mb-12">Consultation Options</h2>
 
-      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-4">
-            Common Issues Addressed via Telehealth
-          </h2>
-          <p className="text-base sm:text-lg text-freedoc-secondary mb-12 max-w-2xl mx-auto">
-            Our doctors can provide free advice for many common health concerns.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
-            {commonIssues.map((issue) => (
-              <span
-                key={issue}
-                className="bg-blue-100 text-freedoc-blue px-4 py-2 rounded-full text-sm sm:text-base font-medium shadow-sm"
-              >
-                {issue}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Video className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Video Consultation</h3>
+              <p className="text-slate-600 mb-6">
+                Face-to-face video consultations with our doctors for a more personal experience.
+              </p>
+              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                Free
               </span>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      <section className="py-16 lg:py-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-12">
-            Benefits of Freedoc Telehealth
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {whyChooseFreedocTH.map((reason) => (
-              <div key={reason.title} className="p-6">
-                <div className="flex justify-center items-center mb-4">{reason.icon}</div>
-                <h3 className="text-lg sm:text-xl font-semibold text-freedoc-dark mb-2">{reason.title}</h3>
-                <p className="text-freedoc-secondary text-sm sm:text-base">{reason.description}</p>
+            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Phone className="h-8 w-8 text-blue-600" />
               </div>
-            ))}
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Phone Consultation</h3>
+              <p className="text-slate-600 mb-6">
+                Speak with our doctors over the phone for convenient healthcare access.
+              </p>
+              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                Free
+              </span>
+            </div>
+
+            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <MessageSquare className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Chat Consultation</h3>
+              <p className="text-slate-600 mb-6">
+                Text-based consultations for non-urgent health concerns and questions.
+              </p>
+              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                Free
+              </span>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-12 text-center">
-            Telehealth FAQs
-          </h2>
-          <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-            {faqsTH.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-b last:border-b-0">
-                <AccordionTrigger className="text-lg sm:text-xl hover:no-underline text-left py-4 font-medium">
-                  {faq.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-freedoc-secondary text-base sm:text-lg pb-4 pt-2">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+      {/* Common Conditions */}
+      <section className="py-16 bg-slate-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">Common Conditions We Treat</h2>
+          <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
+            Our doctors can help with a wide range of health concerns through telehealth consultations.
+          </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Cold & Flu</h3>
+              <p className="text-sm text-slate-600">Symptoms, treatment, and advice</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Skin Conditions</h3>
+              <p className="text-sm text-slate-600">Rashes, acne, and other skin issues</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Mental Health</h3>
+              <p className="text-sm text-slate-600">Anxiety, depression, and stress</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Allergies</h3>
+              <p className="text-sm text-slate-600">Seasonal allergies and reactions</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">UTIs</h3>
+              <p className="text-sm text-slate-600">Urinary tract infections</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Digestive Issues</h3>
+              <p className="text-sm text-slate-600">Stomach pain, nausea, and more</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Headaches</h3>
+              <p className="text-sm text-slate-600">Migraines and tension headaches</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Sexual Health</h3>
+              <p className="text-sm text-slate-600">STI concerns and contraception</p>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-slate-600 mb-4">
+              Not sure if we can help with your condition? Contact us or start a consultation to find out.
+            </p>
+            <Link href="/consult">
+              <Button className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1">
+                Start Free Consultation <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
-      <FreedocFooter />
+      <SiteFooter />
     </div>
   )
 }

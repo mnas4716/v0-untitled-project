@@ -53,12 +53,6 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        "freedoc-blue": {
-          DEFAULT: "#0d6efd",
-          light: "#f0f7ff",
-        },
-        "freedoc-dark": "#212529",
-        "freedoc-secondary": "#6c757d",
       },
       borderRadius: {
         lg: "var(--radius)",

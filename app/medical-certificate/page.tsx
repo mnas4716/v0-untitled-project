@@ -1,211 +1,285 @@
-import {
-  CheckCircle2,
-  FileText,
-  UserCheck,
-  FileSpreadsheet,
-  Clock,
-  ShieldCheck,
-  Briefcase,
-  GraduationCap,
-  Baby,
-  BadgeCheckIcon as CheckBadge,
-} from "lucide-react"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { ComingSoonBanner } from "../components/coming-soon-banner"
-import { FreedocHeader } from "../components/freedoc-header"
-import { FreedocFooter } from "../components/freedoc-footer"
-
-const trustBadges = [
-  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2 flex-shrink-0" />, text: "AHPRA Registered Doctors" },
-  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2 flex-shrink-0" />, text: "Accepted Australia-Wide" },
-  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2 flex-shrink-0" />, text: "Secure & Confidential" },
-  { icon: <CheckCircle2 className="h-5 w-5 text-freedoc-blue mr-2 flex-shrink-0" />, text: "Completely Free Service" },
-]
-
-const howItWorksStepsMc = [
-  {
-    icon: <FileText className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Complete online form",
-    description: "Fill out a simple online questionnaire about your symptoms and reasons for needing a certificate.",
-  },
-  {
-    icon: <UserCheck className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Doctor reviews your request",
-    description: "An Australian Partner Doctor will review your information to assess your eligibility.",
-  },
-  {
-    icon: <FileSpreadsheet className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Receive your certificate",
-    description: "If approved, your medical certificate will be securely sent to your email, typically within hours.",
-  },
-]
-
-const usesOfCertificate = [
-  { icon: <Briefcase className="h-6 w-6 text-freedoc-blue mr-3 flex-shrink-0" />, text: "Absence from Work" },
-  {
-    icon: <GraduationCap className="h-6 w-6 text-freedoc-blue mr-3 flex-shrink-0" />,
-    text: "Absence from University or School",
-  },
-  {
-    icon: <Baby className="h-6 w-6 text-freedoc-blue mr-3 flex-shrink-0" />,
-    text: "Carer's Leave (for family members)",
-  },
-  {
-    icon: <CheckCircle2 className="h-6 w-6 text-freedoc-blue mr-3 flex-shrink-0" />,
-    text: "Other general purpose leave",
-  },
-]
-
-const whyChooseFreedocMc = [
-  {
-    icon: <Clock className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Fast & Easy",
-    description: "Get your medical certificate quickly without leaving home. Simple online process.",
-  },
-  {
-    icon: <CheckBadge className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Accepted Australia-Wide",
-    description: "Our medical certificates are issued by AHPRA registered doctors and are widely accepted.",
-  },
-  {
-    icon: <ShieldCheck className="h-10 w-10 lg:h-12 lg:w-12 text-freedoc-blue mb-3" />,
-    title: "Qualified Doctors & Free",
-    description: "All requests are reviewed by experienced Australian Partner Doctors, completely free.",
-  },
-]
-
-const faqsMc = [
-  {
-    question: "How quickly will I receive my medical certificate?",
-    answer:
-      "Most medical certificates are issued within a few hours of submitting your request, provided it's approved by the doctor. In some cases, it may take up to 24 hours. This service is entirely free.",
-  },
-  {
-    question: "Is an online medical certificate valid?",
-    answer:
-      "Yes, medical certificates obtained online from services like Freedoc, issued by AHPRA registered doctors, are legitimate and generally accepted by employers and educational institutions across Australia.",
-  },
-  {
-    question: "What information is on the medical certificate?",
-    answer:
-      "The certificate will include your name, the date of consultation, the period you are unfit for work/study, the doctor's details, and their AHPRA registration number.",
-  },
-  {
-    question: "Can I get a certificate for multiple days?",
-    answer:
-      "Yes, depending on the doctor's assessment of your condition, certificates can be issued for single or multiple days. Please provide accurate information in your online form.",
-  },
-]
+import Image from "next/image"
+import Link from "next/link"
+import { CheckCircle, ArrowRight, FileText, Clock, Shield } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
 
 export default function MedicalCertificatePage() {
   return (
-    <div className="bg-white text-freedoc-dark">
-      <FreedocHeader />
-      <div className="sticky top-[80px] z-30">
-        <ComingSoonBanner />
-      </div>
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <SiteHeader activePage="medical-certificate" />
 
-      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-freedoc-dark mb-4">
-              Online Medical Certificates
-            </h1>
-            <p className="text-lg sm:text-xl text-freedoc-secondary mb-6">
-              Get a medical certificate online from an Australian Partner Doctor.
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div className="container mx-auto px-4 py-16 md:py-20 flex flex-col md:flex-row items-center">
+          <div className="md:w-1/2 mb-10 md:mb-0">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Online Medical Certificates</h2>
+            <p className="text-lg mb-6">
+              Get a medical certificate from the comfort of your home. Our qualified doctors can provide medical
+              certificates for work, school, or other purposes.
             </p>
-            <p className="text-xl sm:text-2xl font-semibold text-freedoc-blue mb-8">100% Free Certificate</p>
-            <div className="space-y-3 flex flex-col items-center sm:items-start">
-              {trustBadges.map((badge) => (
-                <div key={badge.text} className="flex items-center text-freedoc-secondary text-sm sm:text-base">
-                  {badge.icon}
-                  <span>{badge.text}</span>
-                </div>
-              ))}
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Quick and convenient online consultations</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Legally valid medical certificates</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Certificates emailed directly to you</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-blue-300" />
+                <span>Secure and confidential service</span>
+              </li>
+            </ul>
+            <Link href="/medical-certificate/request">
+              <Button
+                size="lg"
+                className="bg-white hover:bg-blue-50 text-blue-600 transition-all transform hover:-translate-y-1"
+              >
+                Request Medical Certificate
+              </Button>
+            </Link>
+          </div>
+
+          <div className="md:w-1/2 flex justify-center">
+            <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
+              <Image
+                src="https://images.unsplash.com/photo-1584982751601-97dcc096659c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                alt="Medical Certificate"
+                width={400}
+                height={400}
+                className="rounded-md w-full h-auto"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-16 lg:py-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-4">
-            How to Get Your Medical Certificate
-          </h2>
-          <p className="text-base sm:text-lg text-freedoc-secondary mb-12 max-w-2xl mx-auto">
-            A simple and confidential process to get your certificate online.
+      {/* Services Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">Medical Certificate Services</h2>
+          <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
+            Our doctors can provide medical certificates for a variety of situations through secure online
+            consultations.
           </p>
-          <div className="grid md:grid-cols-3 gap-8">
-            {howItWorksStepsMc.map((step, index) => (
-              <div key={step.title} className="p-6 sm:p-8 bg-white rounded-lg shadow-lg border border-slate-200">
-                <div className="flex justify-center items-center mb-4">{step.icon}</div>
-                <h3 className="text-lg sm:text-xl font-semibold text-freedoc-dark mb-2">
-                  {index + 1}. {step.title}
-                </h3>
-                <p className="text-freedoc-secondary text-sm sm:text-base">{step.description}</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <FileText className="h-8 w-8 text-blue-600" />
               </div>
-            ))}
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Sick Leave</h3>
+              <p className="text-slate-600 mb-6">
+                Get a medical certificate for sick leave from work or school due to illness or injury.
+              </p>
+              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                Most Common
+              </span>
+            </div>
+
+            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Clock className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Time Off Work</h3>
+              <p className="text-slate-600 mb-6">
+                Medical certificates for extended time off work due to ongoing health conditions or recovery.
+              </p>
+              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                Fast Service
+              </span>
+            </div>
+
+            <div className="bg-slate-50 p-8 rounded-lg shadow-md text-center transform transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Shield className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Fitness Certificates</h3>
+              <p className="text-slate-600 mb-6">
+                Certificates confirming your fitness to return to work, school, or participate in activities.
+              </p>
+              <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                Comprehensive
+              </span>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-12 text-center">
-            When Can You Use an Online Medical Certificate?
-          </h2>
-          <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {usesOfCertificate.map((use) => (
-              <div
-                key={use.text}
-                className="flex items-center p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
-              >
-                {use.icon}
-                <span className="text-freedoc-dark ml-3 text-sm sm:text-base">{use.text}</span>
+      {/* Example Certificate Section */}
+      <section className="py-16 bg-slate-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+              <div>
+                <h2 className="text-3xl font-bold mb-4 text-slate-800">Professional Medical Certificates</h2>
+                <p className="text-slate-600 mb-6">
+                  Our medical certificates are professionally prepared by qualified doctors and are legally valid for
+                  submission to employers, schools, and other institutions.
+                </p>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
+                    <span className="text-slate-700">Official doctor letterhead and signature</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
+                    <span className="text-slate-700">Detailed information about your condition</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
+                    <span className="text-slate-700">Recommended recovery period</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600 mt-0.5" />
+                    <span className="text-slate-700">Digital delivery for immediate use</span>
+                  </li>
+                </ul>
               </div>
-            ))}
+              <div className="bg-white p-3 rounded-lg shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl">
+                <Image
+                  src="https://images.unsplash.com/photo-1586773860418-d37222d8fce3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                  alt="Medical Certificate Example"
+                  width={400}
+                  height={300}
+                  className="rounded-md w-full"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="py-16 lg:py-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-12">
-            Why Choose Freedoc for Medical Certificates?
+      {/* Common Conditions */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">
+            Common Reasons for Medical Certificates
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {whyChooseFreedocMc.map((reason) => (
-              <div key={reason.title} className="p-6">
-                <div className="flex justify-center items-center mb-4">{reason.icon}</div>
-                <h3 className="text-lg sm:text-xl font-semibold text-freedoc-dark mb-2">{reason.title}</h3>
-                <p className="text-freedoc-secondary text-sm sm:text-base">{reason.description}</p>
-              </div>
-            ))}
+          <p className="text-center text-slate-600 mb-12 max-w-3xl mx-auto">
+            Our doctors can provide medical certificates for a wide range of conditions and situations.
+          </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Cold & Flu</h3>
+              <p className="text-sm text-slate-600">Viral infections requiring rest</p>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Gastroenteritis</h3>
+              <p className="text-sm text-slate-600">Stomach flu and digestive issues</p>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Migraines</h3>
+              <p className="text-sm text-slate-600">Severe headaches and related symptoms</p>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Back Pain</h3>
+              <p className="text-sm text-slate-600">Acute or chronic back injuries</p>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Mental Health</h3>
+              <p className="text-sm text-slate-600">Stress, anxiety, and depression</p>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Injuries</h3>
+              <p className="text-sm text-slate-600">Sprains, strains, and minor injuries</p>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Respiratory Issues</h3>
+              <p className="text-sm text-slate-600">Asthma, bronchitis, and infections</p>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-all">
+              <h3 className="font-semibold mb-2 text-slate-800">Recovery</h3>
+              <p className="text-sm text-slate-600">Post-surgery or procedure recovery</p>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-slate-600 mb-4">
+              Not sure if we can help with your situation? Contact us or start a consultation to find out.
+            </p>
+            <Link href="/medical-certificate/request">
+              <Button className="bg-blue-600 hover:bg-blue-700 transition-all transform hover:-translate-y-1">
+                Request Medical Certificate <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
 
-      <section className="py-16 lg:py-24 bg-freedoc-blue-light">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-freedoc-dark mb-12 text-center">
-            Medical Certificate FAQs
-          </h2>
-          <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-            {faqsMc.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-b last:border-b-0">
-                <AccordionTrigger className="text-lg sm:text-xl hover:no-underline text-left py-4 font-medium">
-                  {faq.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-freedoc-secondary text-base sm:text-lg pb-4 pt-2">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+      {/* How It Works */}
+      <section className="py-16 bg-slate-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-slate-800 mb-12">How It Works</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
+              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-blue-600">1</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Request a Certificate</h3>
+              <p className="text-slate-600">
+                Fill out our simple online form with your details and the reason you need a medical certificate.
+              </p>
+            </div>
+
+            <div className="text-center bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
+              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-blue-600">2</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Doctor Review</h3>
+              <p className="text-slate-600">
+                One of our qualified doctors will review your request and may contact you for additional information if
+                needed.
+              </p>
+            </div>
+
+            <div className="text-center bg-white p-8 rounded-lg shadow-md hover:shadow-lg transition-all">
+              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-blue-600">3</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-slate-800">Receive Your Certificate</h3>
+              <p className="text-slate-600">
+                If approved, you'll receive your medical certificate via email, ready to use for work, school, or other
+                purposes.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <FreedocFooter />
+      {/* CTA Section */}
+      <section className="py-16 bg-slate-100">
+        <div className="container mx-auto px-4">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 md:p-12 shadow-lg">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-3xl font-bold text-white mb-4">Need a medical certificate?</h2>
+              <p className="text-blue-100 mb-8">
+                Our doctors can provide you with a valid medical certificate quickly and conveniently. Start your
+                request today.
+              </p>
+              <Link href="/medical-certificate/request">
+                <Button
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-blue-50 transition-all transform hover:-translate-y-1"
+                >
+                  Request Medical Certificate
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <SiteFooter />
     </div>
   )
 }
