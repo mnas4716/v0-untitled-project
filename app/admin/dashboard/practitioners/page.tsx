@@ -1,9 +1,11 @@
 "use client"
 
+import type React from "react"
+
 import { DialogTrigger } from "@/components/ui/dialog"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Search, Download, Mail, Eye, EyeOff, UserX, UserCheck, Plus } from "lucide-react"
+import { Search, Download, Mail, Eye, EyeOff, UserX, UserCheck, Plus, Upload, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -37,8 +39,6 @@ export default function PractitionersPage() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    title: "",
-    specialty: "",
     providerNumber: "",
     registrationNumber: "",
     email: "",
@@ -46,6 +46,9 @@ export default function PractitionersPage() {
     password: "",
     status: "active",
   })
+  const [signature, setSignature] = useState<File | null>(null)
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [formError, setFormError] = useState("")
   const { toast } = useToast()
@@ -73,7 +76,7 @@ export default function PractitionersPage() {
       const matchesSearch =
         practitioner.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         practitioner.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        practitioner.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (practitioner.specialty && practitioner.specialty.toLowerCase().includes(searchTerm.toLowerCase())) ||
         practitioner.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (practitioner.providerNumber && practitioner.providerNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (practitioner.registrationNumber &&
@@ -110,7 +113,42 @@ export default function PractitionersPage() {
     router.push(`/admin/dashboard/practitioners/${practitionerId}`)
   }
 
-  const handleAddPractitioner = () => {
+  const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+
+      // Check if file is an image
+      if (!file.type.startsWith("image/")) {
+        setFormError("Please upload an image file for the signature")
+        return
+      }
+
+      // Check file size (limit to 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        setFormError("Signature image must be less than 2MB")
+        return
+      }
+
+      setSignature(file)
+
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setSignaturePreview(event.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveSignature = () => {
+    setSignature(null)
+    setSignaturePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const handleAddPractitioner = async () => {
     setFormError("")
     // Validate form
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
@@ -125,14 +163,45 @@ export default function PractitionersPage() {
     }
 
     try {
-      // Create new practitioner with the provided password
+      // Process signature if uploaded
+      let signatureData = undefined
+
+      if (signature) {
+        const reader = new FileReader()
+        const signaturePromise = new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            try {
+              const base64Content = reader.result as string
+              resolve(base64Content)
+            } catch (error) {
+              reject(error)
+            }
+          }
+          reader.onerror = () => {
+            reject(new Error("Error reading signature file"))
+          }
+          reader.readAsDataURL(signature)
+        })
+
+        const base64Signature = await signaturePromise
+
+        signatureData = {
+          fileName: signature.name,
+          fileType: signature.type,
+          fileSize: signature.size,
+          content: base64Signature.split(",")[1], // Remove data URL prefix
+          uploadedAt: new Date().toISOString(),
+        }
+      }
+
+      // Create new practitioner with the provided password and signature
       const newPractitioner = createDoctor({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        specialty: formData.specialty || "General Practice",
         providerNumber: formData.providerNumber,
         registrationNumber: formData.registrationNumber,
+        signature: signatureData,
         phone: formData.phone,
         status: formData.status as "active" | "inactive" | "on leave",
         password: formData.password, // Pass the password to the createDoctor function
@@ -143,8 +212,6 @@ export default function PractitionersPage() {
       setFormData({
         firstName: "",
         lastName: "",
-        title: "",
-        specialty: "",
         providerNumber: "",
         registrationNumber: "",
         email: "",
@@ -152,6 +219,8 @@ export default function PractitionersPage() {
         password: "",
         status: "active",
       })
+      setSignature(null)
+      setSignaturePreview(null)
 
       toast({
         title: "Success",
@@ -210,7 +279,7 @@ export default function PractitionersPage() {
               </Alert>
             )}
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name *</Label>
                   <Input
@@ -229,42 +298,6 @@ export default function PractitionersPage() {
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Select value={formData.title} onValueChange={(value) => setFormData({ ...formData, title: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select title" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MD">MD</SelectItem>
-                      <SelectItem value="DO">DO</SelectItem>
-                      <SelectItem value="NP">NP</SelectItem>
-                      <SelectItem value="PA">PA</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="specialty">Specialty</Label>
-                <Select
-                  value={formData.specialty}
-                  onValueChange={(value) => setFormData({ ...formData, specialty: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select specialty" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Family Medicine">Family Medicine</SelectItem>
-                    <SelectItem value="Internal Medicine">Internal Medicine</SelectItem>
-                    <SelectItem value="Pediatrics">Pediatrics</SelectItem>
-                    <SelectItem value="Dermatology">Dermatology</SelectItem>
-                    <SelectItem value="Cardiology">Cardiology</SelectItem>
-                    <SelectItem value="Psychiatry">Psychiatry</SelectItem>
-                    <SelectItem value="Orthopedics">Orthopedics</SelectItem>
-                    <SelectItem value="General Practice">General Practice</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -284,6 +317,48 @@ export default function PractitionersPage() {
                     placeholder="Registration number"
                     value={formData.registrationNumber}
                     onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signature">Signature</Label>
+                <div className="border rounded-md p-4">
+                  {signaturePreview ? (
+                    <div className="relative">
+                      <img
+                        src={signaturePreview || "/placeholder.svg"}
+                        alt="Signature preview"
+                        className="max-h-32 max-w-full object-contain mx-auto"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-0 right-0"
+                        onClick={handleRemoveSignature}
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Remove signature</span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-4">
+                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-500 mb-2">Upload practitioner's signature</p>
+                      <p className="text-xs text-gray-400 mb-4">PNG, JPG or GIF up to 2MB</p>
+                      <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                        Select File
+                      </Button>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    id="signature"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleSignatureChange}
                   />
                 </div>
               </div>
@@ -451,7 +526,8 @@ export default function PractitionersPage() {
                           </Avatar>
                           <div>
                             <div className="font-medium">
-                              {practitioner.firstName} {practitioner.lastName}, {practitioner.title || "MD"}
+                              {practitioner.firstName} {practitioner.lastName}
+                              {practitioner.title ? `, ${practitioner.title}` : ""}
                             </div>
                             <div className="text-xs text-gray-500">{practitioner.id}</div>
                           </div>
