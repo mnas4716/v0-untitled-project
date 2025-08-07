@@ -1,4 +1,4 @@
-import { getUserByEmail, getConsultRequestsByEmail, createUser, updateUser } from "./database-service"
+import { getUserByEmail, getConsultRequestsByEmail, createUser, updateUser, updateUserLoginTime } from "./database-service"
 import { setUserInStorage } from "./client-auth"
 
 // Unified function to get or create user from database and set in localStorage
@@ -8,8 +8,12 @@ export async function authenticateUser(email: string): Promise<{
   message?: string
 }> {
   try {
+    if (typeof window === "undefined") {
+      return { success: false, message: "Authentication must be done on the client." }
+    }
+
     // Check if user has any consultation requests
-    const consultRequests = getConsultRequestsByEmail(email)
+    const consultRequests = await getConsultRequestsByEmail(email)
     if (!consultRequests || consultRequests.length === 0) {
       return {
         success: false,
@@ -19,7 +23,7 @@ export async function authenticateUser(email: string): Promise<{
     }
 
     // Check if user exists and is active
-    let user = getUserByEmail(email)
+    let user = await getUserByEmail(email)
 
     if (user && !user.isActive) {
       return {
@@ -44,10 +48,11 @@ export async function authenticateUser(email: string): Promise<{
         phone: latestRequest.details?.phone || latestRequest.phone || "",
         dob: latestRequest.details?.dob || "",
         role: "user",
+        isActive: true, // Assuming new users are active by default
       }
 
       // Create user in database
-      user = createUser(userData)
+      user = await createUser(userData)
     } else {
       // Update user with any new information from recent consultations
       const latestRequest = consultRequests.sort(
@@ -75,9 +80,12 @@ export async function authenticateUser(email: string): Promise<{
 
       // Only update if there are changes
       if (Object.keys(updateData).length > 0) {
-        user = updateUser(user.id, updateData) || user
+        user = await updateUser(user.id, updateData) || user
       }
     }
+
+    // Update last login time
+    await updateUserLoginTime(user.id)
 
     // Store user data in localStorage
     setUserInStorage(user)
